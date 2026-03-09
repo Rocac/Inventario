@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# Flask
+instance/
+*.log
+
+# Env (NO subir credenciales)
+.env
+
+# Uploads (opcional: si no quieres subir imágenes)
+static/uploads/
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

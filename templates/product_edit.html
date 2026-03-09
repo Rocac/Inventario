@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editar producto</title>
+
+<style>
+:root{
+  --bg:#f3f6fb;
+  --sidebar1:#1f66ff;
+  --sidebar2:#31b8ff;
+  --topbar:#1f66ff;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#e5e7eb;
+  --shadow:0 12px 28px rgba(0,0,0,.10);
+  --radius:14px;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+.layout{
+  display:grid;
+  grid-template-columns:260px 1fr;
+  min-height:100vh;
+}
+.sidebar{
+  background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
+  color:#fff;
+  padding:18px 14px;
+  position:sticky;
+  top:0;
+  height:100vh;
+}
+.brand,.profile{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border-radius:12px;
+  background:rgba(255,255,255,.12);
+  margin-bottom:14px;
+}
+.logo,.avatar{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  display:grid;
+  place-items:center;
+  background:rgba(255,255,255,.18);
+}
+.menu-title{
+  margin:14px 10px 8px;
+  font-size:11px;
+  opacity:.85;
+  letter-spacing:.14em;
+}
+.nav a{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  padding:10px 12px;
+  border-radius:12px;
+  color:#fff;
+  text-decoration:none;
+}
+.nav a:hover{background:rgba(255,255,255,.12)}
+.nav a.active{
+  background:rgba(255,255,255,.18);
+  font-weight:800;
+}
+.content{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+}
+.topbar{
+  background:var(--topbar);
+  color:#fff;
+  padding:12px 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:5;
+  box-shadow:0 8px 16px rgba(0,0,0,.10);
+}
+.page{padding:18px}
+h1{
+  margin:6px 0 14px;
+  font-size:22px;
+}
+.flash{
+  width:100%;
+  margin-bottom:12px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#fff;
+  font-size:13px;
+}
+.flash.ok{
+  border-color:rgba(22,163,74,.25);
+  background:rgba(22,163,74,.08);
+}
+.flash.error{
+  border-color:rgba(239,68,68,.25);
+  background:rgba(239,68,68,.08);
+}
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  max-width:1100px;
+}
+.card-header{
+  padding:12px 14px;
+  border-bottom:1px solid var(--line);
+  background:#f8fbff;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.card-body{padding:14px}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px 14px;
+}
+label{
+  display:block;
+  font-size:12px;
+  font-weight:900;
+  color:#5b708f;
+  margin-bottom:8px;
+  letter-spacing:.06em;
+}
+input, select{
+  width:100%;
+  padding:11px 12px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  outline:none;
+  font-size:14px;
+  background:#fff;
+}
+input:focus, select:focus{
+  border-color:rgba(31,102,255,.45);
+  box-shadow:0 0 0 3px rgba(31,102,255,.12);
+}
+.hint{
+  font-size:12px;
+  color:#64748b;
+  margin-top:8px;
+}
+.full{grid-column:1/-1}
+.actions{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  padding:14px;
+  border-top:1px solid var(--line);
+  background:#fff;
+  flex-wrap:wrap;
+}
+.btn{
+  padding:10px 14px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  text-decoration:none;
+  font-weight:900;
+  font-size:14px;
+  cursor:pointer;
+  background:#fff;
+  color:var(--text);
+}
+.primary{
+  background:#2563eb;
+  border-color:transparent;
+  color:#fff;
+}
+.current-image{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:10px 0;
+}
+.current-image img{
+  width:70px;
+  height:70px;
+  object-fit:cover;
+  border-radius:12px;
+  border:1px solid var(--line);
+}
+@media(max-width:980px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:relative;height:auto}
+  .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">📦</div>
+      <div>
+        <b>Inventarios</b><br>
+        <span style="font-size:12px">Productos</span>
+      </div>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">👤</div>
+      <div>
+        <div style="font-weight:900">{{ username }}</div>
+        <small>Usuario activo</small>
+      </div>
+    </div>
+
+    <div class="menu-title">MANTENIMIENTOS</div>
+    <nav class="nav">
+      <a href="/categorias">🏷️ Categorías</a>
+      <a href="/productos" class="active">📦 Productos</a>
+      <a href="/proveedores">🏭 Proveedores</a>
+      <a href="/clientes">🧑 Clientes</a>
+    </nav>
+
+    <div class="menu-title">OPERACIONES</div>
+    <nav class="nav">
+      <a href="/ventas/nueva">💲 Registrar venta</a>
+      <a href="/ventas">🧾 Historial de ventas</a>
+      <a href="/kardex">📒 Kardex</a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div style="font-weight:900">Productos</div>
+      <div>Home / Productos / Editar</div>
+    </div>
+
+    <div class="page">
+      <h1>Editar producto</h1>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" enctype="multipart/form-data" class="card">
+        <div class="card-header">
+          <b>📦 Editar datos del producto</b>
+          <span style="font-size:12px;color:#64748b;font-weight:800">
+            Sube una imagen nueva solo si quieres reemplazarla
+          </span>
+        </div>
+
+        <div class="card-body">
+          <div class="grid">
+            <div>
+              <label>CÓDIGO DEL PRODUCTO *</label>
+              <input type="text" name="code" value="{{ p[1] }}" required>
+            </div>
+
+            <div>
+              <label>NOMBRE *</label>
+              <input type="text" name="name" value="{{ p[2] }}" required>
+            </div>
+
+            <div>
+              <label>CATEGORÍA *</label>
+              <select name="category_id" required>
+                <option value="">-- Seleccionar --</option>
+                {% for c in categories %}
+                  <option value="{{ c[0] }}" {% if p[4] == c[0] %}selected{% endif %}>
+                    {{ c[1] }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div>
+              <label>PROVEEDOR</label>
+              <select name="supplier_id">
+                <option value="">-- Seleccionar --</option>
+                {% for s in suppliers %}
+                  <option value="{{ s[0] }}" {% if p[5] == s[0] %}selected{% endif %}>
+                    {{ s[1] }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div>
+              <label>STOCK *</label>
+              <input type="number" name="stock" min="0" value="{{ p[7] }}" required>
+            </div>
+
+            <div>
+              <label>STOCK MÍNIMO (ALERTA)</label>
+              <input type="number" name="min_stock" min="0" value="{{ p[8] }}">
+            </div>
+
+            <div>
+              <label>PRECIO (S/.) *</label>
+              <input type="number" name="price" step="0.01" min="0" value="{{ p[9] }}" required>
+            </div>
+
+            <div>
+              <label>IMAGEN (ARCHIVO)</label>
+              <input type="file" name="image_file" accept=".png,.jpg,.jpeg,.webp">
+              <div class="hint">Si no subes nada, se mantiene la imagen actual.</div>
+            </div>
+
+            <div class="full">
+              <div class="current-image">
+                <strong>Imagen actual:</strong>
+                {% if p[6] %}
+                  <img src="/static/uploads/{{ p[6] }}" alt="Imagen actual">
+                  <span>{{ p[6] }}</span>
+                {% else %}
+                  <span>No hay imagen cargada.</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <a href="/productos" class="btn">Cancelar</a>
+          <button type="submit" class="btn primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

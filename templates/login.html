@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login - Inventario</title>
+
+  <style>
+    :root{
+      --bg1:#0b1020;
+      --bg2:#0f1b3a;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --primary:#22c55e;
+      --primary2:#14b8a6;
+      --border: rgba(255,255,255,.10);
+      --radius: 20px;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto;
+      color:var(--text);
+      background: radial-gradient(1200px 800px at 20% 10%, rgba(20,184,166,.25), transparent 55%),
+                  radial-gradient(900px 700px at 90% 20%, rgba(34,197,94,.22), transparent 55%),
+                  linear-gradient(135deg, var(--bg1), var(--bg2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+    }
+
+    .container{
+      width:min(950px, 100%);
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:20px;
+    }
+
+    .left{
+      padding:30px;
+      border-radius:var(--radius);
+      background: rgba(255,255,255,.05);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+    }
+
+    .left h1{
+      margin-top:0;
+      font-size:28px;
+    }
+
+    .left p{
+      color:var(--muted);
+      line-height:1.6;
+    }
+
+    .left ul{
+      margin-top:20px;
+      padding-left:20px;
+      color:#d1d5db;
+    }
+
+    .right{
+      padding:30px;
+      border-radius:var(--radius);
+      background: rgba(15,23,42,.85);
+      border:1px solid var(--border);
+      box-shadow:var(--shadow);
+    }
+
+    .right h2{
+      margin-top:0;
+      font-size:22px;
+    }
+
+    .sub{
+      color:var(--muted);
+      font-size:14px;
+      margin-bottom:20px;
+    }
+
+    .field{
+      margin-bottom:15px;
+    }
+
+    label{
+      font-size:13px;
+      display:block;
+      margin-bottom:6px;
+      color:#cbd5e1;
+    }
+
+    /* Input con icono */
+    .input-wrap{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(2,6,23,.35);
+      transition:.2s ease;
+    }
+
+    .input-wrap:focus-within{
+      border-color: rgba(34,197,94,.5);
+      box-shadow:0 0 0 3px rgba(34,197,94,.15);
+    }
+
+    .icon{
+      width:22px;
+      text-align:center;
+      opacity:.9;
+      flex:0 0 auto;
+    }
+
+    input{
+      width:100%;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:var(--text);
+      font-size:15px;
+    }
+
+    input::placeholder{color:rgba(229,231,235,.45)}
+
+    .row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:15px;
+      gap:12px;
+    }
+
+    /* Checkbox alineado con texto */
+    .check{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+      cursor:pointer;
+      color:#cbd5e1;
+      white-space:nowrap;
+    }
+
+    .check input{
+      width:auto;
+      margin:0;
+      transform: translateY(1px);
+      cursor:pointer;
+    }
+
+    .btn{
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:14px;
+      font-size:15px;
+      font-weight:bold;
+      cursor:pointer;
+      background: linear-gradient(135deg, var(--primary), var(--primary2));
+      color:#06210f;
+      transition:.2s;
+    }
+
+    .btn:hover{
+      filter:brightness(1.05);
+    }
+
+    @media(max-width:800px){
+      .container{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <div class="left">
+    <h1>Inventario de Repuestos Electrónicos</h1>
+    <p>Accede al sistema para registrar entradas, salidas y controlar stock en tiempo real.</p>
+
+    <ul>
+      <li>Control rápido de stock por código y categoría</li>
+      <li>Historial de movimientos (entradas / salidas)</li>
+      <li>Búsqueda rápida de repuestos electrónicos</li>
+    </ul>
+  </div>
+
+  <div class="right">
+    <h2>Iniciar sesión</h2>
+    <p class="sub">Ingresa tus credenciales para entrar al sistema.</p>
+
+    <form method="POST">
+
+      <div class="field">
+        <label>Usuario</label>
+        <div class="input-wrap">
+          <span class="icon">👤</span>
+          <input type="text" name="username" placeholder="Ej: admin" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Contraseña</label>
+        <div class="input-wrap">
+          <span class="icon">🔒</span>
+          <input type="password" id="password" name="password" placeholder="Tu contraseña" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <label class="check">
+          <input type="checkbox" id="showPass">
+          Mostrar contraseña
+        </label>
+      </div>
+
+      <button type="submit" class="btn">Entrar</button>
+
+    </form>
+  </div>
+
+</div>
+
+<script>
+  const check = document.getElementById("showPass");
+  const pass = document.getElementById("password");
+
+  check.addEventListener("change", () => {
+    pass.type = check.checked ? "text" : "password";
+  });
+</script>
+
+</body>
+</html>

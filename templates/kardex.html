@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Kardex</title>
+
+<style>
+:root{
+  --bg:#f3f6fb; --sidebar1:#1f66ff; --sidebar2:#31b8ff; --topbar:#1f66ff;
+  --card:#ffffff; --text:#0f172a; --muted:#64748b; --line:#e5e7eb;
+  --shadow:0 12px 28px rgba(0,0,0,.10); --radius:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));color:#fff;padding:18px 14px;position:sticky;top:0;height:100vh}
+.brand,.profile{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.12);margin-bottom:14px}
+.profile{background:rgba(255,255,255,.10)}
+.logo{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.18)}
+.avatar{width:34px;height:34px;border-radius:999px;background:rgba(255,255,255,.18);display:grid;place-items:center}
+.menu-title{margin:14px 10px 8px;font-size:11px;opacity:.85;letter-spacing:.14em}
+.nav a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;color:#fff;text-decoration:none;opacity:.95}
+.nav a:hover{background:rgba(255,255,255,.12)}
+.nav a.active{background:rgba(255,255,255,.18);font-weight:800}
+
+.content{min-width:0;display:flex;flex-direction:column}
+.topbar{background:var(--topbar);color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5;box-shadow:0 8px 16px rgba(0,0,0,.10)}
+.crumbs{font-size:12px;opacity:.95}
+.page{padding:18px}
+h1{margin:6px 0 14px;font-size:22px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;max-width:1200px}
+.card-header{padding:12px 14px;border-bottom:1px solid var(--line);background:#f8fbff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+
+.btn{
+  padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+  text-decoration:none;font-weight:900;font-size:13px;cursor:pointer;background:#fff;color:var(--text);
+  display:inline-flex;gap:8px;align-items:center
+}
+.primary{background:var(--sidebar1);border-color:transparent;color:#fff}
+
+.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+input{
+  padding:10px 12px;border:1px solid var(--line);border-radius:12px;outline:none;font-size:14px;background:#fff
+}
+input:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3px rgba(31,102,255,.12)}
+
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}
+th{background:#f1f5f9;color:var(--muted);font-size:12px;letter-spacing:.08em}
+.badge{padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px;border:1px solid var(--line);display:inline-block}
+.badge.in{background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.25)}
+.badge.out{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.25)}
+.badge.adj{background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.25)}
+.empty{padding:18px;color:var(--muted);text-align:center;background:#fff}
+
+@media(max-width:980px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:relative;height:auto}
+}
+</style>
+</head>
+
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🏷️</div>
+      <div><b>Inventarios</b><br><span style="font-size:12px">Categorías</span></div>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">👤</div>
+      <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
+    </div>
+
+    <div class="menu-title">MANTENIMIENTOS</div>
+    <nav class="nav">
+      <a href="/categorias">🏷️ Categorías</a>
+      <a href="/productos">📦 Productos</a>
+      <a href="/proveedores">🏭 Proveedores</a>
+      <a href="/clientes">🧑 Clientes</a>
+    </nav>
+
+    <div class="menu-title">OPERACIONES</div>
+    <nav class="nav">
+      <a href="/ventas/nueva">💲 Registrar venta</a>
+      <a href="/ventas">🧾 Historial de ventas</a>
+      <a href="/kardex" class="active">📒 Kardex</a>
+    </nav>
+
+    <div class="menu-title">SESIÓN</div>
+    <nav class="nav">
+      <a href="{{ url_for('logout') }}">🚪 Salir</a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div style="font-weight:900">Kardex</div>
+    </div>
+
+    <div class="page">
+      <h1>Kardex (movimientos de inventario)</h1>
+
+      <div class="card">
+        <div class="card-header">
+          <b>📒 Movimientos</b>
+
+          <form class="filters" method="GET" action="/kardex">
+            <input name="code" value="{{ code }}" placeholder="Filtrar por código (exacto)  Ej: R220">
+            <button class="btn primary" type="submit">Buscar</button>
+            <a class="btn" href="/kardex">Limpiar</a>
+          </form>
+        </div>
+
+        {% if rows and rows|length > 0 %}
+        <table>
+          <thead>
+            <tr>
+              <th>FECHA</th>
+              <th>CÓDIGO</th>
+              <th>PRODUCTO</th>
+              <th>MOVIMIENTO</th>
+              <th>CANTIDAD</th>
+              <th>STOCK FINAL</th>
+              <th>REF</th>
+              <th>NOTA</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+              {# r = (id, created_at, code, name, movement, qty, stock_after, ref_table, ref_id, note) #}
+              <tr>
+                <td>{{ r[1] }}</td>
+                <td><b>{{ r[2] }}</b></td>
+                <td>{{ r[3] }}</td>
+
+                <td>
+                  {% if r[4] == 'ENTRADA' %}
+                    <span class="badge in">ENTRADA</span>
+                  {% elif r[4] == 'SALIDA' %}
+                    <span class="badge out">SALIDA</span>
+                  {% else %}
+                    <span class="badge adj">{{ r[4] }}</span>
+                  {% endif %}
+                </td>
+
+                <td>{{ r[5] }}</td>
+                <td><b>{{ r[6] }}</b></td>
+                <td>{{ r[7] }} {{ r[8] if r[8] != 0 else '' }}</td>
+                <td>{{ r[9] }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+          <div class="empty">No hay movimientos de kardex todavía. Registra una venta para ver una <b>SALIDA</b>.</div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Categorías</title>
+
+  <style>
+    :root{
+      --bg:#f3f6fb;
+      --sidebar1:#1f66ff; --sidebar2:#31b8ff;
+      --top:#1f66ff;
+      --card:#fff;
+      --text:#0f172a; --muted:#64748b;
+      --line:#e5e7eb;
+      --shadow:0 12px 28px rgba(0,0,0,.10);
+      --r:14px;
+      --ok:#22c55e;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+    .layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+
+    /* Sidebar */
+    .sidebar{background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));color:#fff;padding:18px 14px;position:sticky;top:0;height:100vh}
+    .brand,.profile{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.12);margin-bottom:14px}
+    .profile{background:rgba(255,255,255,.10)}
+    .logo{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.18)}
+    .avatar{width:34px;height:34px;border-radius:999px;background:rgba(255,255,255,.18);display:grid;place-items:center}
+    .menu-title{margin:14px 10px 8px;font-size:11px;opacity:.85;letter-spacing:.14em}
+    .nav a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;color:#fff;text-decoration:none;opacity:.95}
+    .nav a:hover{background:rgba(255,255,255,.12)}
+    .nav a.active{background:rgba(255,255,255,.18);font-weight:800}
+
+    /* Content */
+    .content{min-width:0;display:flex;flex-direction:column}
+    .topbar{background:var(--top);color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5;box-shadow:0 8px 16px rgba(0,0,0,.10)}
+    .crumbs{font-size:12px;opacity:.95}
+    .page{padding:18px}
+    h1{margin:6px 0 14px;font-size:22px}
+
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+    .card-header{
+      padding:12px 14px;border-bottom:1px solid var(--line);background:#f8fbff;
+      display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap
+    }
+
+    .tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .search{display:flex;align-items:center;gap:8px}
+    .search input{
+      padding:10px 12px;border:1px solid var(--line);border-radius:12px;outline:none;min-width:240px
+    }
+    .search input:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3px rgba(31,102,255,.12)}
+
+    .btn{
+      padding:10px 12px;border-radius:12px;border:1px solid var(--line);
+      text-decoration:none;font-weight:900;font-size:13px;cursor:pointer;background:#fff;color:var(--text);
+      display:inline-flex;gap:8px;align-items:center
+    }
+    .btn.primary{background:var(--sidebar1);border-color:transparent;color:#fff}
+    .btn.icon{width:40px;justify-content:center}
+    .btn.warn{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.25);color:#7c4a00}
+    .btn.danger{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.25);color:#7f1d1d}
+
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    th,td{padding:12px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}
+    th{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+    tr:hover td{background:#fafcff}
+
+    .col-actions{white-space:nowrap;text-align:right}
+    .muted{color:var(--muted);font-size:13px}
+
+    .flash{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;margin-bottom:12px}
+    .flash.error{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.07)}
+    .flash.ok{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.07)}
+
+    @media(max-width:900px){
+      .layout{grid-template-columns:1fr}
+      .sidebar{position:relative;height:auto}
+      .search input{min-width:160px}
+    }
+  </style>
+</head>
+
+<body>
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🏷️</div>
+      <div><b>Inventarios</b><br><span style="font-size:12px">Categorías</span></div>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">👤</div>
+      <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
+    </div>
+
+    <div class="menu-title">MANTENIMIENTOS</div>
+    <nav class="nav">
+      <a href="/categorias" class="active">🏷️ Categorías</a>
+      <a href="/productos">📦 Productos</a>
+      <a href="/proveedores">🏭 Proveedores</a>
+      <a href="/clientes">🧑 Clientes</a>
+    </nav>
+
+    <div class="menu-title">OPERACIONES</div>
+    <nav class="nav">
+      <a href="/ventas/nueva">💲 Registrar venta</a>
+      <a href="/ventas">🧾 Historial de ventas</a>
+      <a href="/kardex">📒 Kardex</a>
+    </nav>
+
+    <div class="menu-title">SESIÓN</div>
+    <nav class="nav">
+      <a href="{{ url_for('logout') }}">🚪 Salir</a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div style="font-weight:900">Sistema de Inventarios</div>
+    </div>
+
+    <div class="page">
+      <h1>Categorías</h1>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <b>📌 Listado de categorías</b><br>
+            <span class="muted">Administra y organiza tus repuestos por tipo.</span>
+          </div>
+
+          <div class="tools">
+            <form class="search" method="GET" action="/categorias">
+              <span class="muted">Buscar:</span>
+              <input name="q" value="{{ q or '' }}" placeholder="Ej: Resistencia, Relay...">
+            </form>
+            <a class="btn primary" href="/categorias/nuevo">➕ Nuevo registro</a>
+          </div>
+        </div>
+
+        <div style="overflow:auto">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:80px">Nro</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th class="col-actions" style="width:160px">Opciones</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% if categories and categories|length > 0 %}
+                {% for c in categories %}
+                  <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><b>{{ c[1] }}</b></td>
+                    <td class="muted">{{ c[2] or '-' }}</td>
+                    <td class="col-actions">
+                      <a class="btn icon warn" title="Editar" href="/categorias/{{ c[0] }}/editar">✏️</a>
+
+                      <form style="display:inline" method="POST" action="/categorias/{{ c[0] }}/eliminar"
+                            onsubmit="return confirm('¿Eliminar esta categoría?');">
+                        <button class="btn icon danger" title="Eliminar" type="submit">🗑️</button>
+                      </form>
+                    </td>
+                  </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="4" class="muted">No hay categorías registradas.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
