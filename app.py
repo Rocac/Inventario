@@ -3,6 +3,8 @@ import psycopg
 import psycopg.errors
 import os
 import re
+import json
+from decimal import Decimal, ROUND_HALF_UP
 from dotenv import load_dotenv
 from werkzeug.utils import secure_filename
 
@@ -44,6 +46,10 @@ def validate_email(email: str) -> bool:
     return bool(EMAIL_RE.match(email))
 
 
+def money(x):
+    return Decimal(str(x)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
 UPLOAD_FOLDER = os.path.join("static", "uploads")
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
 
@@ -73,6 +79,158 @@ def get_user(username, password):
                 (username, password)
             )
             return cur.fetchone()
+
+
+def get_company_settings():
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    id,
+                    business_name,
+                    trade_name,
+                    ruc,
+                    address,
+                    phone,
+                    email,
+                    tax_rate,
+                    currency,
+                    logo_url
+                FROM company_settings
+                ORDER BY id ASC
+                LIMIT 1
+            """)
+            return cur.fetchone()
+
+
+def get_next_series_number(document_type: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, serie, current_number
+                FROM document_series
+                WHERE document_type = %s AND active = TRUE
+                ORDER BY id ASC
+                LIMIT 1
+            """, (document_type,))
+            row = cur.fetchone()
+
+            if not row:
+                raise ValueError(f"No existe una serie activa para {document_type}.")
+
+            series_id, serie, current_number = row
+            next_number = (current_number or 0) + 1
+
+            cur.execute("""
+                UPDATE document_series
+                SET current_number = %s
+                WHERE id = %s
+            """, (next_number, series_id))
+
+        conn.commit()
+        return serie, next_number
+
+
+def create_electronic_document_record(sale_id: int, document_type: str):
+    serie, correlativo = get_next_series_number(document_type)
+    full_number = f"{serie}-{str(correlativo).zfill(6)}"
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO electronic_documents (
+                    sale_id,
+                    document_type,
+                    serie,
+                    correlativo,
+                    full_number,
+                    sunat_status
+                )
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id, full_number
+            """, (
+                sale_id,
+                document_type,
+                serie,
+                correlativo,
+                full_number,
+                "PENDIENTE"
+            ))
+            row = cur.fetchone()
+            electronic_document_id = row[0]
+            full_number = row[1]
+
+            cur.execute("""
+                INSERT INTO electronic_document_logs (
+                    electronic_document_id,
+                    event_type,
+                    event_message
+                )
+                VALUES (%s, %s, %s)
+            """, (
+                electronic_document_id,
+                "CREADO",
+                f"Documento electrónico creado: {full_number}"
+            ))
+
+            cur.execute("""
+                UPDATE sales
+                SET document_number = %s
+                WHERE id = %s
+            """, (full_number, sale_id))
+
+        conn.commit()
+
+    return electronic_document_id, full_number
+
+
+def get_electronic_document_by_sale_id(sale_id: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    id,
+                    sale_id,
+                    document_type,
+                    serie,
+                    correlativo,
+                    full_number,
+                    issue_date,
+                    xml_path,
+                    pdf_path,
+                    cdr_path,
+                    hash_value,
+                    qr_text,
+                    sunat_status,
+                    sunat_message,
+                    created_at
+                FROM electronic_documents
+                WHERE sale_id = %s
+                ORDER BY id DESC
+                LIMIT 1
+            """, (sale_id,))
+            return cur.fetchone()
+
+
+def list_electronic_documents():
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    ed.id,
+                    ed.sale_id,
+                    ed.document_type,
+                    ed.full_number,
+                    ed.issue_date,
+                    ed.sunat_status,
+                    COALESCE(s.customer_name, c.name, '-') AS customer_name,
+                    s.total
+                FROM electronic_documents ed
+                JOIN sales s ON s.id = ed.sale_id
+                LEFT JOIN customers c ON c.id = s.customer_id
+                ORDER BY ed.id DESC
+            """)
+            return cur.fetchall()
 
 
 def list_categories(q: str = ""):
@@ -135,6 +293,7 @@ def delete_category(category_id: int):
             used = cur.fetchone()[0]
             if used > 0:
                 raise ValueError("No se puede eliminar: hay productos usando esta categoría.")
+
             cur.execute("DELETE FROM categories WHERE id = %s", (category_id,))
         conn.commit()
 
@@ -201,7 +360,7 @@ def list_customers_full():
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, name, phone, doc, email
+                SELECT id, name, phone, doc, email, address
                 FROM customers
                 ORDER BY name ASC
             """)
@@ -225,11 +384,35 @@ def create_customer(name: str, phone: str, doc: str, email: str):
         conn.commit()
 
 
+def create_customer_quick(name: str, phone: str, doc: str, email: str, address: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO customers(name, phone, doc, email, address)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
+            """, (name, phone or None, doc or None, email or None, address or None))
+            customer_id = cur.fetchone()[0]
+        conn.commit()
+        return customer_id
+
+
 def get_customer_by_id(customer_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, name, phone, doc, email
+                SELECT id, name, phone, doc, email, address
+                FROM customers
+                WHERE id=%s
+            """, (customer_id,))
+            return cur.fetchone()
+
+
+def get_customer_full(customer_id: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, name, phone, doc, email, address
                 FROM customers
                 WHERE id=%s
             """, (customer_id,))
@@ -290,6 +473,17 @@ def list_products(search: str, limit: int, offset: int):
             return cur.fetchall()
 
 
+def get_products_for_sale():
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, code, name, stock, price
+                FROM products
+                ORDER BY name ASC
+            """)
+            return cur.fetchall()
+
+
 def create_product(code, name, category, category_id, supplier_id, stock, min_stock, price, image_filename):
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -345,47 +539,111 @@ def get_product_by_code(code: str):
             return cur.fetchone()
 
 
-def create_sale(product_id: int, qty: int, customer_id: int | None):
+def create_sale_full(
+    document_type: str,
+    customer_id: int | None,
+    customer_name: str,
+    customer_doc: str,
+    customer_email: str,
+    customer_address: str,
+    items: list
+):
+    if not items:
+        raise ValueError("Debes agregar al menos un producto.")
+
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT stock, price FROM products WHERE id=%s", (product_id,))
-            row = cur.fetchone()
-            if not row:
-                raise ValueError("Producto no existe")
+            subtotal = Decimal("0.00")
+            validated_items = []
 
-            stock, unit_price = row
-            if stock < qty:
-                raise ValueError("Stock insuficiente")
+            for item in items:
+                product_id = int(item["product_id"])
+                qty = int(item["qty"])
 
-            line_total = float(unit_price) * qty
+                if qty <= 0:
+                    raise ValueError("La cantidad debe ser mayor a 0.")
+
+                cur.execute("""
+                    SELECT id, code, name, stock, price
+                    FROM products
+                    WHERE id=%s
+                """, (product_id,))
+                product = cur.fetchone()
+
+                if not product:
+                    raise ValueError("Uno de los productos no existe.")
+
+                db_product_id, code, name, stock, unit_price = product
+
+                if stock < qty:
+                    raise ValueError(f"Stock insuficiente para {name}.")
+
+                unit_price = money(unit_price)
+                line_total = money(unit_price * qty)
+                subtotal += line_total
+
+                validated_items.append({
+                    "product_id": db_product_id,
+                    "code": code,
+                    "name": name,
+                    "qty": qty,
+                    "unit_price": unit_price,
+                    "line_total": line_total
+                })
+
+            company = get_company_settings()
+            tax_rate = Decimal("18.00")
+            if company and company[7] is not None:
+                tax_rate = Decimal(str(company[7]))
+
+            igv = money(subtotal * (tax_rate / Decimal("100")))
+            total = money(subtotal + igv)
 
             cur.execute("""
-                INSERT INTO sales (total, customer_id)
-                VALUES (%s, %s)
+                INSERT INTO sales (
+                    total, customer_id, document_type,
+                    subtotal, igv, customer_name, customer_doc,
+                    customer_email, customer_address
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (line_total, customer_id))
+            """, (
+                total, customer_id, document_type,
+                subtotal, igv, customer_name or None, customer_doc or None,
+                customer_email or None, customer_address or None
+            ))
             sale_id = cur.fetchone()[0]
 
-            cur.execute("""
-                INSERT INTO sale_items (sale_id, product_id, qty, unit_price, line_total)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (sale_id, product_id, qty, unit_price, line_total))
+            for item in validated_items:
+                cur.execute("""
+                    INSERT INTO sale_items (sale_id, product_id, qty, unit_price, line_total)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (
+                    sale_id, item["product_id"], item["qty"],
+                    item["unit_price"], item["line_total"]
+                ))
 
-            cur.execute("""
-                UPDATE products
-                SET stock = stock - %s
-                WHERE id=%s
-                RETURNING stock
-            """, (qty, product_id))
-            new_stock = cur.fetchone()[0]
+                cur.execute("""
+                    UPDATE products
+                    SET stock = stock - %s
+                    WHERE id = %s
+                    RETURNING stock
+                """, (item["qty"], item["product_id"]))
+                new_stock = cur.fetchone()[0]
 
-            cur.execute("""
-                INSERT INTO kardex (product_id, movement, qty, stock_after, ref_table, ref_id, note)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (product_id, "SALIDA", qty, new_stock, "sales", sale_id, "Venta registrada"))
+                cur.execute("""
+                    INSERT INTO kardex (product_id, movement, qty, stock_after, ref_table, ref_id, note)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (
+                    item["product_id"], "SALIDA", item["qty"], new_stock,
+                    "sales", sale_id, f"{document_type} generado"
+                ))
 
         conn.commit()
-        return sale_id
+
+    electronic_document_id, full_number = create_electronic_document_record(sale_id, document_type)
+
+    return sale_id, electronic_document_id, full_number
 
 
 def list_sales():
@@ -396,12 +654,15 @@ def list_sales():
                     s.id,
                     TO_CHAR(s.sold_at, 'DD-MM-YYYY HH24:MI:SS') as sold_at,
                     s.total,
-                    COALESCE(c.name, '-') AS customer_name
+                    COALESCE(s.customer_name, c.name, '-') AS customer_name,
+                    COALESCE(s.document_type, 'VENTA') AS document_type,
+                    COALESCE(s.document_number, '-') AS document_number
                 FROM sales s
                 LEFT JOIN customers c ON c.id = s.customer_id
-                ORDER BY s.sold_at DESC, s.id DESC
+                ORDER BY s.id DESC
             """)
             return cur.fetchall()
+
 
 def get_sale_header(sale_id: int):
     with get_conn() as conn:
@@ -411,7 +672,14 @@ def get_sale_header(sale_id: int):
                     s.id,
                     TO_CHAR(s.sold_at, 'DD-MM-YYYY HH24:MI:SS') as sold_at,
                     s.total,
-                    COALESCE(c.name, '-') AS customer_name
+                    COALESCE(s.customer_name, c.name, '-') AS customer_name,
+                    COALESCE(s.document_type, 'VENTA') AS document_type,
+                    COALESCE(s.document_number, '-') AS document_number,
+                    COALESCE(s.subtotal, 0) AS subtotal,
+                    COALESCE(s.igv, 0) AS igv,
+                    COALESCE(s.customer_doc, '') AS customer_doc,
+                    COALESCE(s.customer_email, '') AS customer_email,
+                    COALESCE(s.customer_address, '') AS customer_address
                 FROM sales s
                 LEFT JOIN customers c ON c.id = s.customer_id
                 WHERE s.id = %s
@@ -1105,33 +1373,66 @@ def venta_nueva():
     if not login_required():
         return redirect(url_for("login"))
 
-    customers = list_customers()
+    customers = list_customers_full()
+    products = get_products_for_sale()
 
     if request.method == "POST":
-        code = request.form.get("code", "").strip()
-        qty_raw = request.form.get("qty", "1").strip()
+        document_type = request.form.get("document_type", "VENTA").strip().upper()
+
         customer_id_raw = request.form.get("customer_id", "").strip()
         customer_id = int(customer_id_raw) if customer_id_raw else None
 
-        if not code:
-            flash("Ingresa el código del producto.", "error")
-            return redirect(url_for("venta_nueva"))
+        customer_name = request.form.get("customer_name", "").strip()
+        customer_doc = request.form.get("customer_doc", "").strip()
+        customer_phone = request.form.get("customer_phone", "").strip()
+        customer_email = request.form.get("customer_email", "").strip()
+        customer_address = request.form.get("customer_address", "").strip()
+
+        items_json = request.form.get("items_json", "[]").strip()
 
         try:
-            qty = int(qty_raw)
-            if qty <= 0:
-                raise ValueError
+            items = json.loads(items_json)
         except:
-            flash("Cantidad inválida.", "error")
-            return redirect(url_for("venta_nueva"))
+            items = []
 
-        product = get_product_by_code(code)
-        if not product:
-            flash("No existe un producto con ese código.", "error")
-            return redirect(url_for("venta_nueva"))
+        if customer_id:
+            customer = get_customer_full(customer_id)
+            if customer:
+                customer_name = customer[1] or customer_name
+                customer_doc = customer[3] or customer_doc
+                customer_email = customer[4] or customer_email
+                customer_address = customer[5] or customer_address
+        else:
+            if not customer_name:
+                flash("Debes ingresar el nombre o razón social del cliente.", "error")
+                return redirect(url_for("venta_nueva"))
+
+            if customer_phone and not validate_phone_9(customer_phone):
+                flash("El teléfono del cliente debe tener 9 dígitos.", "error")
+                return redirect(url_for("venta_nueva"))
+
+            if customer_email and not validate_email(customer_email):
+                flash("El correo del cliente no es válido.", "error")
+                return redirect(url_for("venta_nueva"))
+
+            customer_id = create_customer_quick(
+                customer_name,
+                customer_phone,
+                customer_doc,
+                customer_email,
+                customer_address
+            )
 
         try:
-            sale_id = create_sale(product_id=product[0], qty=qty, customer_id=customer_id)
+            sale_id, electronic_document_id, full_number = create_sale_full(
+                document_type=document_type,
+                customer_id=customer_id,
+                customer_name=customer_name,
+                customer_doc=customer_doc,
+                customer_email=customer_email,
+                customer_address=customer_address,
+                items=items
+            )
         except ValueError as e:
             flash(str(e), "error")
             return redirect(url_for("venta_nueva"))
@@ -1139,10 +1440,15 @@ def venta_nueva():
             flash(f"Error registrando venta: {e}", "error")
             return redirect(url_for("venta_nueva"))
 
-        flash(f"✅ Venta registrada (ID: {sale_id}).", "ok")
-        return redirect(url_for("ventas"))
+        flash(f"✅ {document_type} registrada correctamente. Nº {full_number}", "ok")
+        return redirect(url_for("venta_comprobante", sale_id=sale_id))
 
-    return render_template("sale_new.html", username=session.get("username"), customers=customers)
+    return render_template(
+        "sale_new.html",
+        username=session.get("username"),
+        customers=customers,
+        products=products
+    )
 
 
 @app.route("/ventas")
@@ -1164,15 +1470,29 @@ def venta_detalle(sale_id):
         return jsonify({"ok": False, "message": "Venta no encontrada"}), 404
 
     items = get_sale_items(sale_id)
+    edoc = get_electronic_document_by_sale_id(sale_id)
 
     return jsonify({
         "ok": True,
         "header": {
             "id": header[0],
-            "sold_at": str(header[1]),
+            "sold_at": header[1],
             "total": float(header[2]),
-            "customer_name": header[3]
+            "customer_name": header[3],
+            "document_type": header[4],
+            "document_number": header[5],
+            "subtotal": float(header[6]),
+            "igv": float(header[7]),
+            "customer_doc": header[8],
+            "customer_email": header[9],
+            "customer_address": header[10]
         },
+        "electronic_document": {
+            "id": edoc[0],
+            "full_number": edoc[5],
+            "sunat_status": edoc[12],
+            "sunat_message": edoc[13]
+        } if edoc else None,
         "items": [
             {
                 "id": item[0],
@@ -1186,6 +1506,30 @@ def venta_detalle(sale_id):
             for item in items
         ]
     })
+
+
+@app.route("/ventas/<int:sale_id>/comprobante")
+def venta_comprobante(sale_id):
+    if not login_required():
+        return redirect(url_for("login"))
+
+    header = get_sale_header(sale_id)
+    if not header:
+        flash("Comprobante no encontrado.", "error")
+        return redirect(url_for("ventas"))
+
+    items = get_sale_items(sale_id)
+    company = get_company_settings()
+    edoc = get_electronic_document_by_sale_id(sale_id)
+
+    return render_template(
+        "sale_receipt.html",
+        username=session.get("username"),
+        header=header,
+        items=items,
+        company=company,
+        edoc=edoc
+    )
 
 
 @app.route("/kardex")

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agregar producto</title>
+  <title>Nuevo producto</title>
 
   <style>
     :root{
@@ -18,18 +18,22 @@
       --shadow:0 12px 28px rgba(0,0,0,.10);
       --radius:14px;
     }
+
     *{box-sizing:border-box}
+
     body{
       margin:0;
       font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       background:var(--bg);
       color:var(--text);
     }
+
     .layout{
       display:grid;
       grid-template-columns:260px 1fr;
       min-height:100vh;
     }
+
     .sidebar{
       background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
       color:#fff;
@@ -38,6 +42,7 @@
       top:0;
       height:100vh;
     }
+
     .brand,.profile{
       display:flex;
       gap:10px;
@@ -47,7 +52,7 @@
       background:rgba(255,255,255,.12);
       margin-bottom:14px;
     }
-    .profile{background:rgba(255,255,255,.10)}
+
     .logo,.avatar{
       width:38px;
       height:38px;
@@ -56,12 +61,14 @@
       place-items:center;
       background:rgba(255,255,255,.18);
     }
+
     .menu-title{
       margin:14px 10px 8px;
       font-size:11px;
       opacity:.85;
       letter-spacing:.14em;
     }
+
     .nav a{
       display:flex;
       gap:10px;
@@ -70,9 +77,10 @@
       border-radius:12px;
       color:#fff;
       text-decoration:none;
-      opacity:.95;
     }
+
     .nav a:hover{background:rgba(255,255,255,.12)}
+
     .nav a.active{
       background:rgba(255,255,255,.18);
       font-weight:800;
@@ -83,27 +91,31 @@
       display:flex;
       flex-direction:column;
     }
+
     .topbar{
       background:var(--topbar);
       color:#fff;
       padding:12px 18px;
       display:flex;
-      align-items:center;
       justify-content:space-between;
+      align-items:center;
       position:sticky;
       top:0;
       z-index:5;
       box-shadow:0 8px 16px rgba(0,0,0,.10);
     }
-    .crumbs{font-size:12px;opacity:.95}
-    .page{padding:18px}
+
+    .page{
+      padding:18px;
+    }
+
     h1{
       margin:6px 0 14px;
       font-size:22px;
     }
 
     .flash{
-      max-width:1100px;
+      width:100%;
       margin-bottom:12px;
       padding:10px 12px;
       border-radius:12px;
@@ -111,10 +123,12 @@
       background:#fff;
       font-size:13px;
     }
+
     .flash.ok{
       border-color:rgba(22,163,74,.25);
       background:rgba(22,163,74,.08);
     }
+
     .flash.error{
       border-color:rgba(239,68,68,.25);
       background:rgba(239,68,68,.08);
@@ -128,6 +142,7 @@
       overflow:hidden;
       max-width:1100px;
     }
+
     .card-header{
       padding:12px 14px;
       border-bottom:1px solid var(--line);
@@ -138,12 +153,19 @@
       gap:10px;
       flex-wrap:wrap;
     }
-    .card-body{padding:14px}
+
+    .card-body{
+      padding:16px;
+    }
 
     .grid{
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:18px 14px;
+    }
+
+    .full{
+      grid-column:1 / -1;
     }
 
     label{
@@ -155,7 +177,7 @@
       letter-spacing:.06em;
     }
 
-    input, select, textarea{
+    input, select{
       width:100%;
       padding:11px 12px;
       border:1px solid var(--line);
@@ -165,18 +187,16 @@
       background:#fff;
     }
 
-    input:focus, select:focus, textarea:focus{
+    input:focus, select:focus{
       border-color:rgba(31,102,255,.45);
       box-shadow:0 0 0 3px rgba(31,102,255,.12);
     }
 
     .hint{
       font-size:12px;
-      color:#64748b;
+      color:var(--muted);
       margin-top:8px;
     }
-
-    .full{grid-column:1/-1}
 
     .actions{
       display:flex;
@@ -190,29 +210,36 @@
 
     .btn{
       padding:10px 14px;
-      border-radius:14px;
+      border-radius:12px;
       border:1px solid var(--line);
       text-decoration:none;
-      font-weight:900;
-      font-size:14px;
+      font-weight:700;
+      font-size:13px;
       cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
       background:#fff;
       color:var(--text);
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
     }
 
     .primary{
       background:#2563eb;
-      border-color:transparent;
       color:#fff;
+      border:none;
     }
 
     @media(max-width:980px){
-      .layout{grid-template-columns:1fr}
-      .sidebar{position:relative;height:auto}
-      .grid{grid-template-columns:1fr}
+      .layout{
+        grid-template-columns:1fr;
+      }
+      .sidebar{
+        position:relative;
+        height:auto;
+      }
+      .grid{
+        grid-template-columns:1fr;
+      }
     }
   </style>
 </head>
@@ -222,13 +249,19 @@
 
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">🏷️</div>
-      <div><b>Inventarios</b><br><span style="font-size:12px">Categorías</span></div>
+      <div class="logo">📦</div>
+      <div>
+        <b>Inventarios</b><br>
+        <span style="font-size:12px">Nuevo producto</span>
+      </div>
     </div>
 
     <div class="profile">
       <div class="avatar">👤</div>
-      <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
+      <div>
+        <div style="font-weight:900">{{ username }}</div>
+        <small>Usuario activo</small>
+      </div>
     </div>
 
     <div class="menu-title">MANTENIMIENTOS</div>
@@ -255,10 +288,11 @@
   <div class="content">
     <div class="topbar">
       <div style="font-weight:900">Productos</div>
+      <div>Home / Productos / Nuevo</div>
     </div>
 
     <div class="page">
-      <h1>Agregar producto</h1>
+      <h1>Nuevo producto</h1>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
@@ -271,12 +305,13 @@
       <form method="POST" enctype="multipart/form-data" class="card">
         <div class="card-header">
           <b>📦 Datos del producto</b>
-          <span style="font-size:12px;color:#64748b;font-weight:800">Los campos con * son obligatorios</span>
+          <span style="font-size:12px;color:#64748b;font-weight:800">
+            Completa la información para registrar el producto
+          </span>
         </div>
 
         <div class="card-body">
           <div class="grid">
-
             <div>
               <label>CÓDIGO DEL PRODUCTO *</label>
               <input type="text" name="code" placeholder="Ej: RES-220-01" required>
@@ -284,23 +319,21 @@
 
             <div>
               <label>NOMBRE *</label>
-              <input type="text" name="name" placeholder="Ej: Resistencia 220Ω 1/4W" required>
+              <input type="text" name="name" placeholder="Ej: Resistencia 220Ω" required>
             </div>
 
             <div>
               <label>CATEGORÍA *</label>
-              <!-- IMPORTANTE: name='category' -->
-              <select name="category" required>
-                <option value="" selected disabled>-- Seleccionar --</option>
+              <select name="category_id" required>
+                <option value="">-- Seleccionar --</option>
                 {% for c in categories %}
-                  <option value="{{ c[1] }}">{{ c[1] }}</option>
+                  <option value="{{ c[0] }}">{{ c[1] }}</option>
                 {% endfor %}
               </select>
             </div>
 
             <div>
               <label>PROVEEDOR</label>
-              <!-- IMPORTANTE: name='supplier_id' -->
               <select name="supplier_id">
                 <option value="">-- Seleccionar --</option>
                 {% for s in suppliers %}
@@ -315,26 +348,27 @@
             </div>
 
             <div>
-              <label>STOCK MÍNIMO (ALERTA)</label>
+              <label>STOCK MÍNIMO</label>
               <input type="number" name="min_stock" min="0" value="0">
-              <div class="hint">Si el stock baja a este número, se marcará en rojo.</div>
+              <div class="hint">Se usa para alertas de bajo stock.</div>
             </div>
 
             <div>
               <label>PRECIO (S/.) *</label>
-              <input type="number" step="0.01" min="0" name="price" value="0" required>
+              <input type="number" name="price" step="0.01" min="0" value="0" required>
             </div>
 
             <div>
-              <label>IMAGEN (ARCHIVO)</label>
+              <label>IMAGEN</label>
               <input type="file" name="image_file" accept=".png,.jpg,.jpeg,.webp">
-              <div class="hint">Formato permitido: PNG/JPG/JPEG/WEBP</div>
+              <div class="hint">Formatos permitidos: PNG, JPG, JPEG, WEBP.</div>
             </div>
 
-            <div class="full hint">
-              ✅ Tip: Usa un código corto y consistente para que la búsqueda sea rápida.
+            <div class="full">
+              <div class="hint">
+                Tip: usa códigos cortos y ordenados para que luego la búsqueda por código sea más rápida.
+              </div>
             </div>
-
           </div>
         </div>
 

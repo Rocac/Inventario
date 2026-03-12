@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comprobante</title>
+
+  <style>
+    :root{
+      --bg:#f3f6fb;
+      --sidebar1:#1f66ff;
+      --sidebar2:#31b8ff;
+      --topbar:#1f66ff;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e5e7eb;
+      --shadow:0 12px 28px rgba(0,0,0,.10);
+      --radius:14px;
+      --accent:#2563eb;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:260px 1fr;
+      min-height:100vh;
+    }
+
+    .sidebar{
+      background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
+      color:#fff;
+      padding:18px 14px;
+      position:sticky;
+      top:0;
+      height:100vh;
+    }
+
+    .brand,.profile{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.12);
+      margin-bottom:14px;
+    }
+
+    .logo,.avatar{
+      width:38px;
+      height:38px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.18);
+    }
+
+    .menu-title{
+      margin:14px 10px 8px;
+      font-size:11px;
+      opacity:.85;
+      letter-spacing:.14em;
+    }
+
+    .nav a{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      color:#fff;
+      text-decoration:none;
+    }
+
+    .nav a:hover{background:rgba(255,255,255,.12)}
+
+    .nav a.active{
+      background:rgba(255,255,255,.18);
+      font-weight:800;
+    }
+
+    .content{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .topbar{
+      background:var(--topbar);
+      color:#fff;
+      padding:12px 18px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      position:sticky;
+      top:0;
+      z-index:5;
+      box-shadow:0 8px 16px rgba(0,0,0,.10);
+    }
+
+    .page{
+      padding:18px;
+    }
+
+    h1{
+      margin:6px 0 14px;
+      font-size:22px;
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      width:100%;
+    }
+
+    .receipt-head{
+      display:grid;
+      grid-template-columns:1.4fr 1fr;
+      gap:16px;
+      padding:18px;
+      border-bottom:1px solid var(--line);
+      background:#fff;
+    }
+
+    .company-box{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:16px;
+      background:#fff;
+    }
+
+    .doc-box{
+      border:2px solid var(--accent);
+      border-radius:14px;
+      padding:16px;
+      background:#f8fbff;
+      text-align:center;
+    }
+
+    .company-title{
+      font-size:24px;
+      font-weight:900;
+      margin-bottom:6px;
+      color:#111827;
+    }
+
+    .company-sub{
+      color:var(--muted);
+      font-size:14px;
+      line-height:1.6;
+    }
+
+    .doc-type{
+      font-size:22px;
+      font-weight:900;
+      color:var(--accent);
+      margin-bottom:6px;
+      text-transform:uppercase;
+    }
+
+    .doc-number{
+      font-size:20px;
+      font-weight:800;
+      color:#111827;
+    }
+
+    .section{
+      padding:18px;
+      border-bottom:1px solid var(--line);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+
+    .box{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px 14px;
+      background:#fff;
+    }
+
+    .box small{
+      display:block;
+      font-size:11px;
+      font-weight:800;
+      color:var(--muted);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      margin-bottom:6px;
+    }
+
+    .box strong{
+      font-size:15px;
+    }
+
+    .full{
+      grid-column:1 / -1;
+    }
+
+    .status-row{
+      display:flex;
+      justify-content:flex-end;
+      margin-bottom:14px;
+    }
+
+    .status-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      border:1px solid #dbeafe;
+      background:#eff6ff;
+      color:#1d4ed8;
+    }
+
+    .status-ok{
+      background:#ecfdf3;
+      color:#166534;
+      border-color:#bbf7d0;
+    }
+
+    .status-pending{
+      background:#fff7ed;
+      color:#b45309;
+      border-color:#fed7aa;
+    }
+
+    .table-wrap{
+      overflow-x:auto;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+    }
+
+    thead th{
+      background:#f1f5f9;
+      color:#64748b;
+      font-size:12px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      text-align:center;
+      padding:14px 12px;
+      border-bottom:1px solid var(--line);
+    }
+
+    tbody td{
+      padding:14px 12px;
+      border-bottom:1px solid var(--line);
+      text-align:center;
+      vertical-align:middle;
+      font-size:14px;
+    }
+
+    .totals{
+      max-width:380px;
+      margin-left:auto;
+      border:1px solid var(--line);
+      border-radius:12px;
+      overflow:hidden;
+      margin-top:18px;
+      background:#fff;
+    }
+
+    .totals-row{
+      display:flex;
+      justify-content:space-between;
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      font-size:14px;
+    }
+
+    .totals-row:last-child{
+      border-bottom:none;
+      background:#f8fbff;
+      font-weight:900;
+      font-size:16px;
+    }
+
+    .actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      padding:18px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      text-decoration:none;
+      font-weight:700;
+      font-size:13px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      background:#fff;
+      color:var(--text);
+    }
+
+    .primary{
+      background:#2563eb;
+      color:#fff;
+      border:none;
+    }
+
+    @media(max-width:980px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+      .sidebar{
+        position:relative;
+        height:auto;
+      }
+      .receipt-head{
+        grid-template-columns:1fr;
+      }
+      .grid{
+        grid-template-columns:1fr;
+      }
+      .totals{
+        max-width:none;
+        margin-left:0;
+      }
+    }
+
+    @media print{
+      .sidebar,
+      .topbar,
+      .actions{
+        display:none !important;
+      }
+
+      .layout{
+        display:block;
+      }
+
+      body{
+        background:#fff;
+      }
+
+      .page{
+        padding:0;
+      }
+
+      .card{
+        border:none;
+        box-shadow:none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🧾</div>
+      <div>
+        <b>Inventarios</b><br>
+        <span style="font-size:12px">Comprobante</span>
+      </div>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">👤</div>
+      <div>
+        <div style="font-weight:900">{{ username }}</div>
+        <small>Usuario activo</small>
+      </div>
+    </div>
+
+    <div class="menu-title">MANTENIMIENTOS</div>
+    <nav class="nav">
+      <a href="/categorias">🏷️ Categorías</a>
+      <a href="/productos">📦 Productos</a>
+      <a href="/proveedores">🏭 Proveedores</a>
+      <a href="/clientes">🧑 Clientes</a>
+    </nav>
+
+    <div class="menu-title">OPERACIONES</div>
+    <nav class="nav">
+      <a href="/ventas/nueva">💲 Registrar venta</a>
+      <a href="/ventas" class="active">🧾 Historial de ventas</a>
+      <a href="/kardex">📒 Kardex</a>
+    </nav>
+
+    <div class="menu-title">SESIÓN</div>
+    <nav class="nav">
+      <a href="{{ url_for('logout') }}">🚪 Salir</a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div style="font-weight:900">Comprobante</div>
+      <div>Home / Ventas / Comprobante</div>
+    </div>
+
+    <div class="page">
+      <h1>Detalle del comprobante</h1>
+
+      <div class="card">
+
+        <div class="receipt-head">
+          <div class="company-box">
+            <div class="company-title">
+              {{ company[2] or company[1] if company else 'EMPRESA' }}
+            </div>
+            <div class="company-sub">
+              <strong>Razón social:</strong> {{ company[1] if company else '-' }}<br>
+              <strong>RUC:</strong> {{ company[3] if company else '-' }}<br>
+              <strong>Dirección:</strong> {{ company[4] or '-' if company else '-' }}<br>
+              <strong>Teléfono:</strong> {{ company[5] or '-' if company else '-' }}<br>
+              <strong>Correo:</strong> {{ company[6] or '-' if company else '-' }}
+            </div>
+          </div>
+
+          <div class="doc-box">
+            <div class="doc-type">{{ edoc[2] if edoc else header[4] }}</div>
+            <div class="doc-number">{{ edoc[5] if edoc else header[5] }}</div>
+          </div>
+        </div>
+
+        <div class="section">
+
+          <div class="status-row">
+            {% if edoc %}
+              {% if edoc[12] == 'ACEPTADO' %}
+                <span class="status-badge status-ok">Estado: {{ edoc[12] }}</span>
+              {% else %}
+                <span class="status-badge status-pending">Estado: {{ edoc[12] }}</span>
+              {% endif %}
+            {% else %}
+              <span class="status-badge">Estado: INTERNO</span>
+            {% endif %}
+          </div>
+
+          <div class="grid">
+            <div class="box">
+              <small>Fecha de emisión</small>
+              <strong>{{ header[1] }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Cliente / Razón social</small>
+              <strong>{{ header[3] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>DNI / RUC</small>
+              <strong>{{ header[8] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Correo</small>
+              <strong>{{ header[9] or '-' }}</strong>
+            </div>
+
+            <div class="box full">
+              <small>Dirección</small>
+              <strong>{{ header[10] or '-' }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Descripción</th>
+                  <th>Cantidad</th>
+                  <th>Valor unitario</th>
+                  <th>Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in items %}
+                <tr>
+                  <td>{{ item[2] }}</td>
+                  <td>{{ item[3] }}</td>
+                  <td>{{ item[4] }}</td>
+                  <td>S/ {{ '%.2f'|format(item[5]) }}</td>
+                  <td>S/ {{ '%.2f'|format(item[6]) }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="totals">
+            <div class="totals-row">
+              <span>Subtotal</span>
+              <span>S/ {{ '%.2f'|format(header[6]) }}</span>
+            </div>
+            <div class="totals-row">
+              <span>IGV{% if company and company[7] %} ({{ '%.2f'|format(company[7]) }}%){% else %} (18%){% endif %}</span>
+              <span>S/ {{ '%.2f'|format(header[7]) }}</span>
+            </div>
+            <div class="totals-row">
+              <span>Total a pagar</span>
+              <span>S/ {{ '%.2f'|format(header[2]) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <a href="/ventas" class="btn">Volver</a>
+          <button onclick="window.print()" class="btn primary">Imprimir</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
