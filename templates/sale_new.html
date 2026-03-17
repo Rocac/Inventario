@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nueva venta</title>
+  <title>Nuevo comprobante</title>
 
   <style>
     :root{
@@ -16,9 +16,9 @@
       --muted:#64748b;
       --line:#e5e7eb;
       --shadow:0 12px 28px rgba(0,0,0,.10);
-      --radius:14px;
-      --ok:#16a34a;
-      --err:#ef4444;
+      --radius:16px;
+      --primary:#2563eb;
+      --danger:#dc2626;
     }
 
     *{box-sizing:border-box}
@@ -101,9 +101,6 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
-      position:sticky;
-      top:0;
-      z-index:5;
       box-shadow:0 8px 16px rgba(0,0,0,.10);
     }
 
@@ -115,14 +112,26 @@
       display:flex;
       justify-content:space-between;
       align-items:center;
-      gap:12px;
+      gap:14px;
       flex-wrap:wrap;
-      margin-bottom:14px;
+      margin-bottom:16px;
     }
 
-    h1{
+    .title-block h1{
       margin:0;
-      font-size:22px;
+      font-size:26px;
+    }
+
+    .title-block p{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .head-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
     }
 
     .flash{
@@ -145,42 +154,34 @@
       background:rgba(239,68,68,.08);
     }
 
+    .top-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr 340px;
+      gap:16px;
+      margin-bottom:16px;
+      align-items:stretch;
+    }
+
     .card{
       background:var(--card);
       border:1px solid var(--line);
       border-radius:var(--radius);
       box-shadow:var(--shadow);
       overflow:hidden;
-      width:100%;
-      margin-bottom:16px;
     }
 
     .card-header{
-      padding:12px 14px;
+      padding:12px 16px;
       border-bottom:1px solid var(--line);
       background:#f8fbff;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
+      font-weight:800;
     }
 
     .card-body{
       padding:16px;
     }
 
-    .grid{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:16px 14px;
-    }
-
-    .full{
-      grid-column:1 / -1;
-    }
-
-    label{
+    .label{
       display:block;
       font-size:12px;
       font-weight:900;
@@ -191,7 +192,7 @@
 
     input, select{
       width:100%;
-      padding:11px 12px;
+      padding:12px 13px;
       border:1px solid var(--line);
       border-radius:14px;
       outline:none;
@@ -210,15 +211,26 @@
       margin-top:8px;
     }
 
-    .toolbar{
+    .client-grid{
       display:grid;
-      grid-template-columns:1fr 150px auto;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+
+    .full{
+      grid-column:1 / -1;
+    }
+
+    .product-toolbar{
+      display:grid;
+      grid-template-columns:1fr 160px 220px;
       gap:12px;
       align-items:end;
+      margin-bottom:16px;
     }
 
     .btn{
-      padding:10px 14px;
+      padding:11px 15px;
       border-radius:12px;
       border:1px solid var(--line);
       text-decoration:none;
@@ -228,20 +240,21 @@
       background:#fff;
       color:var(--text);
       display:inline-flex;
-      gap:8px;
       align-items:center;
       justify-content:center;
+      gap:8px;
     }
 
     .primary{
-      background:#2563eb;
-      border-color:transparent;
+      background:var(--primary);
       color:#fff;
+      border:none;
     }
 
-    .ghost{
+    .danger-mini{
+      border-color:#fecaca;
+      color:var(--danger);
       background:#fff;
-      color:#111827;
     }
 
     .table-wrap{
@@ -251,7 +264,7 @@
     table{
       width:100%;
       border-collapse:collapse;
-      min-width:800px;
+      min-width:860px;
     }
 
     thead th{
@@ -260,7 +273,7 @@
       font-size:12px;
       letter-spacing:.08em;
       text-transform:uppercase;
-      text-align:left;
+      text-align:center;
       padding:14px 12px;
       border-bottom:1px solid var(--line);
     }
@@ -269,6 +282,7 @@
       padding:14px 12px;
       border-bottom:1px solid var(--line);
       font-size:14px;
+      text-align:center;
       vertical-align:middle;
     }
 
@@ -287,60 +301,72 @@
       border:1px solid #c7d2fe;
     }
 
-    .totals{
-      max-width:360px;
-      margin-left:auto;
-      border:1px solid var(--line);
-      border-radius:12px;
-      overflow:hidden;
-      margin-top:18px;
-      background:#fff;
-    }
-
-    .totals-row{
-      display:flex;
-      justify-content:space-between;
-      padding:12px 14px;
-      border-bottom:1px solid var(--line);
-      font-size:14px;
-    }
-
-    .totals-row:last-child{
-      border-bottom:none;
-      background:#f8fbff;
-      font-weight:900;
-      font-size:15px;
-    }
-
-    .actions{
-      display:flex;
-      gap:10px;
-      justify-content:flex-end;
-      margin-top:18px;
-      flex-wrap:wrap;
-    }
-
-    .top-actions{
-      display:flex;
-      gap:10px;
-      justify-content:flex-end;
-      flex-wrap:wrap;
-    }
-
     .empty{
       color:var(--muted);
       padding:18px 0;
       text-align:center;
     }
 
-    .right{
-      text-align:right;
+    .summary-box{
+      background:linear-gradient(180deg,#ffffff,#f8fbff);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:18px;
+      box-shadow:var(--shadow);
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
     }
 
-    .danger-mini{
-      border-color:#fca5a5;
-      color:#dc2626;
-      background:#fff;
+    .summary-title{
+      font-size:15px;
+      font-weight:900;
+      margin-bottom:14px;
+    }
+
+    .summary-row{
+      display:flex;
+      justify-content:space-between;
+      padding:10px 0;
+      border-bottom:1px solid #e9eef5;
+      font-size:14px;
+    }
+
+    .summary-row:last-of-type{
+      border-bottom:none;
+    }
+
+    .summary-total{
+      margin-top:12px;
+      padding-top:14px;
+      border-top:2px solid #dbeafe;
+      display:flex;
+      justify-content:space-between;
+      font-size:20px;
+      font-weight:900;
+      color:#0f172a;
+    }
+
+    .summary-note{
+      margin-top:12px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.5;
+    }
+
+    .bottom-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:18px;
+      flex-wrap:wrap;
+    }
+
+    @media(max-width:1180px){
+      .top-grid{
+        grid-template-columns:1fr;
+      }
     }
 
     @media(max-width:980px){
@@ -351,15 +377,9 @@
         position:relative;
         height:auto;
       }
-      .grid, .toolbar{
+      .client-grid,
+      .product-toolbar{
         grid-template-columns:1fr;
-      }
-      .totals{
-        max-width:none;
-        margin-left:0;
-      }
-      .page-head{
-        align-items:flex-start;
       }
     }
   </style>
@@ -370,10 +390,10 @@
 
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">💲</div>
+      <div class="logo">🧾</div>
       <div>
         <b>Inventarios</b><br>
-        <span style="font-size:12px">Nueva venta</span>
+        <span style="font-size:12px">Nuevo comprobante</span>
       </div>
     </div>
 
@@ -395,8 +415,8 @@
 
     <div class="menu-title">OPERACIONES</div>
     <nav class="nav">
-      <a href="/ventas/nueva" class="active">💲 Registrar venta</a>
-      <a href="/ventas">🧾 Historial de ventas</a>
+      <a href="/ventas/nueva" class="active">🧾 Nuevo comprobante</a>
+      <a href="/ventas">🧾 Historial de comprobantes</a>
       <a href="/kardex">📒 Kardex</a>
     </nav>
 
@@ -408,16 +428,21 @@
 
   <div class="content">
     <div class="topbar">
-      <div style="font-weight:900">Nueva venta</div>
-      <div>Home / Ventas / Nueva</div>
+      <div style="font-weight:900">Nuevo comprobante</div>
+      <div>Home / Comprobantes / Nuevo</div>
     </div>
 
     <div class="page">
       <form method="POST" id="saleForm">
+
         <div class="page-head">
-          <h1>Nueva venta / comprobante</h1>
-          <div class="top-actions">
-            <a href="/ventas" class="btn ghost">Cancelar</a>
+          <div class="title-block">
+            <h1>Emitir comprobante</h1>
+            <p>Selecciona el tipo de documento y completa los datos del cliente y productos.</p>
+          </div>
+
+          <div class="head-actions">
+            <a href="/ventas" class="btn">Cancelar</a>
             <button type="submit" class="btn primary">Guardar comprobante</button>
           </div>
         </div>
@@ -430,63 +455,101 @@
           {% endif %}
         {% endwith %}
 
-        <div class="card">
-          <div class="card-header">
-            <b>🧾 Datos del comprobante</b>
+        <div class="top-grid">
+          <div class="card">
+            <div class="card-header">Tipo de comprobante</div>
+            <div class="card-body">
+              <label class="label">DOCUMENTO</label>
+              <select name="document_type" id="document_type">
+                <option value="FACTURA">FACTURA</option>
+                <option value="BOLETA">BOLETA</option>
+                <option value="NOTA_VENTA">NOTA DE VENTA</option>
+              </select>
+            </div>
           </div>
+
+          <div class="card">
+            <div class="card-header">Cliente registrado</div>
+            <div class="card-body">
+              <label class="label">CLIENTE EXISTENTE (OPCIONAL)</label>
+              <select name="customer_id" id="customer_id">
+                <option value="">-- Seleccionar cliente --</option>
+                {% for c in customers %}
+                  <option
+                    value="{{ c[0] }}"
+                    data-name="{{ c[1] or '' }}"
+                    data-phone="{{ c[2] or '' }}"
+                    data-dni="{{ c[3] or '' }}"
+                    data-ruc="{{ c[4] or '' }}"
+                    data-email="{{ c[5] or '' }}"
+                    data-address="{{ c[6] or '' }}">
+                    {{ c[1] }}
+                    {% if c[3] %} - DNI: {{ c[3] }}{% endif %}
+                    {% if c[4] %} - RUC: {{ c[4] }}{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+              <div class="hint">Si eliges un cliente, sus datos llenarán el formulario automáticamente.</div>
+            </div>
+          </div>
+
+          <div class="summary-box">
+            <div>
+              <div class="summary-title">Resumen del comprobante</div>
+
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <span id="subtotalText">S/ 0.00</span>
+              </div>
+
+              <div class="summary-row">
+                <span>IGV</span>
+                <span id="igvText">S/ 0.00</span>
+              </div>
+
+              <div class="summary-total">
+                <span>Total</span>
+                <span id="totalText">S/ 0.00</span>
+              </div>
+            </div>
+
+            <div class="summary-note" id="summaryNote">
+              La factura requiere razón social y RUC del cliente.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">Datos del cliente</div>
           <div class="card-body">
-            <div class="grid">
+            <div class="client-grid">
               <div>
-                <label>TIPO DE DOCUMENTO</label>
-                <select name="document_type" id="document_type">
-                  <option value="VENTA">VENTA</option>
-                  <option value="BOLETA">BOLETA</option>
-                  <option value="FACTURA">FACTURA</option>
-                  <option value="COTIZACION">COTIZACIÓN</option>
-                </select>
-              </div>
-
-              <div>
-                <label>CLIENTE EXISTENTE (OPCIONAL)</label>
-                <select name="customer_id" id="customer_id">
-                  <option value="">-- Seleccionar cliente --</option>
-                  {% for c in customers %}
-                    <option
-                      value="{{ c[0] }}"
-                      data-name="{{ c[1] or '' }}"
-                      data-phone="{{ c[2] or '' }}"
-                      data-doc="{{ c[3] or '' }}"
-                      data-email="{{ c[4] or '' }}"
-                      data-address="{{ c[5] or '' }}">
-                      {{ c[1] }}{% if c[3] %} - {{ c[3] }}{% endif %}
-                    </option>
-                  {% endfor %}
-                </select>
-                <div class="hint">Si eliges un cliente, sus datos llenarán el formulario.</div>
-              </div>
-
-              <div>
-                <label>NOMBRE / RAZÓN SOCIAL</label>
+                <label class="label" id="label_customer_name">RAZÓN SOCIAL *</label>
                 <input type="text" name="customer_name" id="customer_name">
               </div>
 
-              <div>
-                <label>DNI / RUC</label>
-                <input type="text" name="customer_doc" id="customer_doc">
+              <div id="ruc_group">
+                <label class="label" id="label_customer_ruc">RUC *</label>
+                <input type="text" name="customer_ruc" id="customer_ruc" placeholder="Ingrese RUC">
+              </div>
+
+              <div id="dni_group">
+                <label class="label" id="label_customer_dni">DNI</label>
+                <input type="text" name="customer_dni" id="customer_dni" placeholder="Ingrese DNI">
               </div>
 
               <div>
-                <label>TELÉFONO</label>
+                <label class="label">TELÉFONO</label>
                 <input type="text" name="customer_phone" id="customer_phone">
               </div>
 
               <div>
-                <label>CORREO</label>
+                <label class="label">CORREO</label>
                 <input type="email" name="customer_email" id="customer_email">
               </div>
 
               <div class="full">
-                <label>DIRECCIÓN</label>
+                <label class="label" id="label_customer_address">DIRECCIÓN FISCAL</label>
                 <input type="text" name="customer_address" id="customer_address">
               </div>
             </div>
@@ -494,13 +557,11 @@
         </div>
 
         <div class="card">
-          <div class="card-header">
-            <b>📦 Agregar productos</b>
-          </div>
+          <div class="card-header">Productos del comprobante</div>
           <div class="card-body">
-            <div class="toolbar">
+            <div class="product-toolbar">
               <div>
-                <label>PRODUCTO</label>
+                <label class="label">PRODUCTO</label>
                 <select id="product_select">
                   <option value="">-- Seleccionar producto --</option>
                   {% for p in products %}
@@ -517,7 +578,7 @@
               </div>
 
               <div>
-                <label>CANTIDAD</label>
+                <label class="label">CANTIDAD</label>
                 <input type="number" id="qty_input" min="1" value="1">
               </div>
 
@@ -526,7 +587,7 @@
               </div>
             </div>
 
-            <div class="table-wrap" style="margin-top:16px;">
+            <div class="table-wrap">
               <table id="itemsTable">
                 <thead>
                   <tr>
@@ -540,35 +601,21 @@
                 </thead>
                 <tbody id="itemsBody">
                   <tr id="emptyRow">
-                    <td colspan="6" class="empty">Todavía no agregaste productos.</td>
+                    <td colspan="6" class="empty">Todavía no agregaste productos al comprobante.</td>
                   </tr>
                 </tbody>
               </table>
-            </div>
-
-            <div class="totals">
-              <div class="totals-row">
-                <span>Subtotal</span>
-                <span id="subtotalText">S/ 0.00</span>
-              </div>
-              <div class="totals-row">
-                <span>IGV</span>
-                <span id="igvText">S/ 0.00</span>
-              </div>
-              <div class="totals-row">
-                <span>Total</span>
-                <span id="totalText">S/ 0.00</span>
-              </div>
             </div>
 
             <input type="hidden" name="items_json" id="items_json">
           </div>
         </div>
 
-        <div class="actions">
-          <a href="/ventas" class="btn ghost">Cancelar</a>
+        <div class="bottom-actions">
+          <a href="/ventas" class="btn">Cancelar</a>
           <button type="submit" class="btn primary">Guardar comprobante</button>
         </div>
+
       </form>
     </div>
   </div>
@@ -581,21 +628,83 @@
     return Number(n).toFixed(2);
   }
 
-  function recalcTotals(){
+  function updateDocumentForm(){
     const docType = document.getElementById("document_type").value;
+
+    const nameLabel = document.getElementById("label_customer_name");
+    const addressLabel = document.getElementById("label_customer_address");
+
+    const dniInput = document.getElementById("customer_dni");
+    const rucInput = document.getElementById("customer_ruc");
+
+    const dniLabel = document.getElementById("label_customer_dni");
+    const rucLabel = document.getElementById("label_customer_ruc");
+
+    const dniGroup = document.getElementById("dni_group");
+    const rucGroup = document.getElementById("ruc_group");
+
+    const summaryNote = document.getElementById("summaryNote");
+
+    if(docType === "FACTURA"){
+      nameLabel.textContent = "RAZÓN SOCIAL *";
+      addressLabel.textContent = "DIRECCIÓN FISCAL";
+
+      rucGroup.style.display = "block";
+      dniGroup.style.display = "none";
+
+      rucInput.disabled = false;
+      dniInput.disabled = true;
+      dniInput.value = "";
+
+      dniLabel.textContent = "DNI";
+      rucLabel.textContent = "RUC *";
+
+      summaryNote.textContent = "La factura requiere razón social y RUC del cliente.";
+    }
+    else if(docType === "BOLETA"){
+      nameLabel.textContent = "NOMBRE DEL CLIENTE *";
+      addressLabel.textContent = "DIRECCIÓN";
+
+      dniGroup.style.display = "block";
+      rucGroup.style.display = "none";
+
+      dniInput.disabled = false;
+      rucInput.disabled = true;
+      rucInput.value = "";
+
+      dniLabel.textContent = "DNI *";
+      rucLabel.textContent = "RUC";
+
+      summaryNote.textContent = "La boleta requiere nombre del cliente y DNI válido.";
+    }
+    else{
+      nameLabel.textContent = "CLIENTE *";
+      addressLabel.textContent = "DIRECCIÓN";
+
+      dniGroup.style.display = "none";
+      rucGroup.style.display = "none";
+
+      dniInput.disabled = true;
+      rucInput.disabled = true;
+      dniInput.value = "";
+      rucInput.value = "";
+
+      dniLabel.textContent = "DNI";
+      rucLabel.textContent = "RUC";
+
+      summaryNote.textContent = "La nota de venta no requiere DNI ni RUC.";
+    }
+  }
+
+  function recalcTotals(){
     let subtotal = 0;
 
     items.forEach(it => {
       subtotal += Number(it.line_total);
     });
 
-    let igv = subtotal * 0.18;
-    let total = subtotal + igv;
-
-    if(docType === "COTIZACION"){
-      igv = subtotal * 0.18;
-      total = subtotal + igv;
-    }
+    const igv = subtotal * 0.18;
+    const total = subtotal + igv;
 
     document.getElementById("subtotalText").innerText = "S/ " + money(subtotal);
     document.getElementById("igvText").innerText = "S/ " + money(igv);
@@ -609,8 +718,8 @@
 
     if(items.length === 0){
       tbody.innerHTML = `
-        <tr id="emptyRow">
-          <td colspan="6" class="empty">Todavía no agregaste productos.</td>
+        <tr>
+          <td colspan="6" class="empty">Todavía no agregaste productos al comprobante.</td>
         </tr>
       `;
       recalcTotals();
@@ -625,9 +734,7 @@
           <td>${it.qty}</td>
           <td>S/ ${money(it.unit_price)}</td>
           <td>S/ ${money(it.line_total)}</td>
-          <td class="right">
-            <button type="button" class="btn danger-mini" onclick="removeItem(${index})">Quitar</button>
-          </td>
+          <td><button type="button" class="btn danger-mini" onclick="removeItem(${index})">Quitar</button></td>
         </tr>
       `;
     });
@@ -684,39 +791,55 @@
     renderItems();
   }
 
-  document.getElementById("document_type").addEventListener("change", function(){
-    const docType = this.value;
-    const docInput = document.getElementById("customer_doc");
-    const docLabel = document.querySelector('label[for="fake_doc"]');
-
-    if(docType === "FACTURA"){
-      docInput.placeholder = "RUC";
-    } else if(docType === "BOLETA"){
-      docInput.placeholder = "DNI";
-    } else {
-      docInput.placeholder = "";
-    }
-
-    recalcTotals();
-  });
-
   document.getElementById("customer_id").addEventListener("change", function(){
     const option = this.options[this.selectedIndex];
+    const docType = document.getElementById("document_type").value;
 
     if(!this.value){
+      document.getElementById("customer_name").value = "";
+      document.getElementById("customer_phone").value = "";
+      document.getElementById("customer_dni").value = "";
+      document.getElementById("customer_ruc").value = "";
+      document.getElementById("customer_email").value = "";
+      document.getElementById("customer_address").value = "";
       return;
     }
 
     document.getElementById("customer_name").value = option.dataset.name || "";
     document.getElementById("customer_phone").value = option.dataset.phone || "";
-    document.getElementById("customer_doc").value = option.dataset.doc || "";
     document.getElementById("customer_email").value = option.dataset.email || "";
     document.getElementById("customer_address").value = option.dataset.address || "";
+
+    if(docType === "FACTURA"){
+      document.getElementById("customer_ruc").value = option.dataset.ruc || "";
+      document.getElementById("customer_dni").value = "";
+    }
+    else if(docType === "BOLETA"){
+      document.getElementById("customer_dni").value = option.dataset.dni || "";
+      document.getElementById("customer_ruc").value = "";
+    }
+    else{
+      document.getElementById("customer_dni").value = "";
+      document.getElementById("customer_ruc").value = "";
+    }
+  });
+
+  document.getElementById("document_type").addEventListener("change", function(){
+    updateDocumentForm();
+    document.getElementById("customer_id").dispatchEvent(new Event("change"));
   });
 
   document.getElementById("saleForm").addEventListener("submit", function(e){
     const docType = document.getElementById("document_type").value;
-    const doc = document.getElementById("customer_doc").value.trim();
+    const customerName = document.getElementById("customer_name").value.trim();
+    const dni = document.getElementById("customer_dni").value.trim();
+    const ruc = document.getElementById("customer_ruc").value.trim();
+
+    if(!customerName){
+      e.preventDefault();
+      alert("Debes ingresar el nombre del cliente o razón social.");
+      return;
+    }
 
     if(items.length === 0){
       e.preventDefault();
@@ -724,20 +847,22 @@
       return;
     }
 
-    if(docType === "FACTURA" && doc.length !== 11){
+    if(docType === "FACTURA" && ruc.length !== 11){
       e.preventDefault();
-      alert("Para FACTURA debes ingresar un RUC de 11 dígitos.");
+      alert("Para FACTURA debes ingresar un RUC válido de 11 dígitos.");
       return;
     }
 
-    if(docType === "BOLETA" && doc.length !== 8){
+    if(docType === "BOLETA" && dni.length !== 8){
       e.preventDefault();
-      alert("Para BOLETA debes ingresar un DNI de 8 dígitos.");
+      alert("Para BOLETA debes ingresar un DNI válido de 8 dígitos.");
       return;
     }
 
     document.getElementById("items_json").value = JSON.stringify(items);
   });
+
+  updateDocumentForm();
 </script>
 
 </body>

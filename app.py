@@ -6,7 +6,6 @@ import re
 import json
 from decimal import Decimal, ROUND_HALF_UP
 from dotenv import load_dotenv
-from werkzeug.utils import secure_filename
 
 load_dotenv()
 
@@ -32,6 +31,8 @@ def login_required() -> bool:
 
 PHONE_9_RE = re.compile(r"^\d{9}$")
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$")
+DNI_RE = re.compile(r"^\d{8}$")
+RUC_RE = re.compile(r"^\d{11}$")
 
 
 def validate_phone_9(phone: str) -> bool:
@@ -46,30 +47,25 @@ def validate_email(email: str) -> bool:
     return bool(EMAIL_RE.match(email))
 
 
+def validate_dni(dni: str) -> bool:
+    if not dni:
+        return True
+    return bool(DNI_RE.match(dni))
+
+
+def validate_ruc(ruc: str) -> bool:
+    if not ruc:
+        return True
+    return bool(RUC_RE.match(ruc))
+
+
 def money(x):
     return Decimal(str(x)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-UPLOAD_FOLDER = os.path.join("static", "uploads")
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp"}
-
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-
-def allowed_file(filename: str) -> bool:
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def unique_filename(original_name: str) -> str:
-    base, ext = os.path.splitext(original_name)
-    candidate = original_name
-    i = 1
-    while os.path.exists(os.path.join(app.config["UPLOAD_FOLDER"], candidate)):
-        candidate = f"{base}_{i}{ext}"
-        i += 1
-    return candidate
-
+# =========================
+# AUTENTICACIÓN
+# =========================
 
 def get_user(username, password):
     with get_conn() as conn:
@@ -80,6 +76,10 @@ def get_user(username, password):
             )
             return cur.fetchone()
 
+
+# =========================
+# CONFIG EMPRESA / DOCS
+# =========================
 
 def get_company_settings():
     with get_conn() as conn:
@@ -212,26 +212,9 @@ def get_electronic_document_by_sale_id(sale_id: int):
             return cur.fetchone()
 
 
-def list_electronic_documents():
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT
-                    ed.id,
-                    ed.sale_id,
-                    ed.document_type,
-                    ed.full_number,
-                    ed.issue_date,
-                    ed.sunat_status,
-                    COALESCE(s.customer_name, c.name, '-') AS customer_name,
-                    s.total
-                FROM electronic_documents ed
-                JOIN sales s ON s.id = ed.sale_id
-                LEFT JOIN customers c ON c.id = s.customer_id
-                ORDER BY ed.id DESC
-            """)
-            return cur.fetchall()
-
+# =========================
+# CATEGORÍAS
+# =========================
 
 def list_categories(q: str = ""):
     q = (q or "").strip()
@@ -298,6 +281,10 @@ def delete_category(category_id: int):
         conn.commit()
 
 
+# =========================
+# PROVEEDORES
+# =========================
+
 def list_suppliers():
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -309,21 +296,20 @@ def list_suppliers_full():
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, name, phone, email, notes
+                SELECT id, name, phone, email, address, notes
                 FROM suppliers
                 ORDER BY name ASC
             """)
             return cur.fetchall()
 
 
-def create_supplier(name: str, phone: str, email: str, notes: str):
+def create_supplier(name: str, phone: str, email: str, address: str, notes: str):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO suppliers(name, phone, email, notes)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (name) DO NOTHING
-            """, (name, phone or None, email or None, notes or None))
+                INSERT INTO suppliers(name, phone, email, address, notes)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (name, phone or None, email or None, address or None, notes or None))
         conn.commit()
 
 
@@ -331,21 +317,21 @@ def get_supplier_by_id(supplier_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, name, phone, email, notes
+                SELECT id, name, phone, email, address, notes
                 FROM suppliers
                 WHERE id=%s
             """, (supplier_id,))
             return cur.fetchone()
 
 
-def update_supplier(supplier_id: int, name: str, phone: str, email: str, notes: str):
+def update_supplier(supplier_id: int, name: str, phone: str, email: str, address: str, notes: str):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 UPDATE suppliers
-                SET name=%s, phone=%s, email=%s, notes=%s
+                SET name=%s, phone=%s, email=%s, address=%s, notes=%s
                 WHERE id=%s
-            """, (name, phone or None, email or None, notes or None, supplier_id))
+            """, (name, phone or None, email or None, address or None, notes or None, supplier_id))
         conn.commit()
 
 
@@ -356,16 +342,9 @@ def delete_supplier(supplier_id: int):
         conn.commit()
 
 
-def list_customers_full():
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT id, name, phone, doc, email, address
-                FROM customers
-                ORDER BY name ASC
-            """)
-            return cur.fetchall()
-
+# =========================
+# CLIENTES
+# =========================
 
 def list_customers():
     with get_conn() as conn:
@@ -374,24 +353,35 @@ def list_customers():
             return cur.fetchall()
 
 
-def create_customer(name: str, phone: str, doc: str, email: str):
+def list_customers_full():
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO customers(name, phone, doc, email)
-                VALUES (%s, %s, %s, %s)
-            """, (name, phone or None, doc or None, email or None))
+                SELECT id, name, phone, dni, ruc, email, address
+                FROM customers
+                ORDER BY name ASC
+            """)
+            return cur.fetchall()
+
+
+def create_customer(name: str, phone: str, dni: str, ruc: str, email: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO customers(name, phone, dni, ruc, email)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (name, phone or None, dni or None, ruc or None, email or None))
         conn.commit()
 
 
-def create_customer_quick(name: str, phone: str, doc: str, email: str, address: str):
+def create_customer_quick(name: str, phone: str, dni: str, ruc: str, email: str, address: str):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO customers(name, phone, doc, email, address)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO customers(name, phone, dni, ruc, email, address)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (name, phone or None, doc or None, email or None, address or None))
+            """, (name, phone or None, dni or None, ruc or None, email or None, address or None))
             customer_id = cur.fetchone()[0]
         conn.commit()
         return customer_id
@@ -401,7 +391,7 @@ def get_customer_by_id(customer_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, name, phone, doc, email, address
+                SELECT id, name, phone, dni, ruc, email, address
                 FROM customers
                 WHERE id=%s
             """, (customer_id,))
@@ -412,21 +402,21 @@ def get_customer_full(customer_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, name, phone, doc, email, address
+                SELECT id, name, phone, dni, ruc, email, address
                 FROM customers
                 WHERE id=%s
             """, (customer_id,))
             return cur.fetchone()
 
 
-def update_customer(customer_id: int, name: str, phone: str, doc: str, email: str):
+def update_customer(customer_id: int, name: str, phone: str, dni: str, ruc: str, email: str):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 UPDATE customers
-                SET name=%s, phone=%s, doc=%s, email=%s
+                SET name=%s, phone=%s, dni=%s, ruc=%s, email=%s
                 WHERE id=%s
-            """, (name, phone or None, doc or None, email or None, customer_id))
+            """, (name, phone or None, dni or None, ruc or None, email or None, customer_id))
         conn.commit()
 
 
@@ -437,6 +427,10 @@ def delete_customer(customer_id: int):
         conn.commit()
 
 
+# =========================
+# PRODUCTOS
+# =========================
+
 def count_products(search: str):
     q = "%" + search + "%"
     with get_conn() as conn:
@@ -444,8 +438,12 @@ def count_products(search: str):
             cur.execute("""
                 SELECT COUNT(*)
                 FROM products p
-                WHERE (%s = '' OR p.code ILIKE %s)
-            """, (search, q))
+                WHERE (
+                    %s = ''
+                    OR p.code ILIKE %s
+                    OR COALESCE(p.alt_code, '') ILIKE %s
+                )
+            """, (search, q, q))
             return cur.fetchone()[0]
 
 
@@ -457,19 +455,24 @@ def list_products(search: str, limit: int, offset: int):
                 SELECT
                     p.id,
                     p.code,
+                    COALESCE(p.alt_code, ''),
                     p.name,
-                    p.category,
-                    p.image_url,
+                    COALESCE(p.category, 'Sin categoría'),
+                    COALESCE(s.name, '-'),
                     p.stock,
                     p.price,
-                    p.min_stock,
-                    COALESCE(s.name, '-') AS supplier_name
+                    COALESCE(p.price_usd, 0),
+                    COALESCE(p.min_stock, 0)
                 FROM products p
                 LEFT JOIN suppliers s ON s.id = p.supplier_id
-                WHERE (%s = '' OR p.code ILIKE %s)
+                WHERE (
+                    %s = ''
+                    OR p.code ILIKE %s
+                    OR COALESCE(p.alt_code, '') ILIKE %s
+                )
                 ORDER BY p.id ASC
                 LIMIT %s OFFSET %s
-            """, (search, q, limit, offset))
+            """, (search, q, q, limit, offset))
             return cur.fetchall()
 
 
@@ -484,13 +487,19 @@ def get_products_for_sale():
             return cur.fetchall()
 
 
-def create_product(code, name, category, category_id, supplier_id, stock, min_stock, price, image_filename):
+def create_product(code, alt_code, name, category, category_id, supplier_id, stock, min_stock, price, price_usd):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO products (code, name, category, category_id, supplier_id, stock, min_stock, price, image_url)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            """, (code, name, category, category_id, supplier_id, stock, min_stock, price, image_filename))
+                INSERT INTO products (
+                    code, alt_code, name, category, category_id,
+                    supplier_id, stock, min_stock, price, price_usd
+                )
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """, (
+                code, alt_code or None, name, category, category_id,
+                supplier_id, stock, min_stock, price, price_usd
+            ))
         conn.commit()
 
 
@@ -498,46 +507,48 @@ def get_product_by_id(product_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, code, name, category, category_id, supplier_id, image_url, stock, min_stock, price
+                SELECT
+                    id, code, alt_code, name, category, category_id,
+                    supplier_id, stock, min_stock, price, price_usd
                 FROM products
                 WHERE id=%s
             """, (product_id,))
             return cur.fetchone()
 
 
-def update_product(product_id: int, code, name, category, category_id, supplier_id, stock, min_stock, price, image_filename):
+def update_product(product_id: int, code, alt_code, name, category, category_id, supplier_id, stock, min_stock, price, price_usd):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 UPDATE products
-                SET code=%s, name=%s, category=%s, category_id=%s, supplier_id=%s,
-                    stock=%s, min_stock=%s, price=%s, image_url=%s
+                SET code=%s,
+                    alt_code=%s,
+                    name=%s,
+                    category=%s,
+                    category_id=%s,
+                    supplier_id=%s,
+                    stock=%s,
+                    min_stock=%s,
+                    price=%s,
+                    price_usd=%s
                 WHERE id=%s
-            """, (code, name, category, category_id, supplier_id, stock, min_stock, price, image_filename, product_id))
+            """, (
+                code, alt_code or None, name, category, category_id,
+                supplier_id, stock, min_stock, price, price_usd, product_id
+            ))
         conn.commit()
 
 
 def delete_product(product_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT image_url FROM products WHERE id=%s", (product_id,))
-            row = cur.fetchone()
-            image_filename = row[0] if row else None
             cur.execute("DELETE FROM products WHERE id=%s", (product_id,))
         conn.commit()
-    return image_filename
 
 
-def get_product_by_code(code: str):
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT id, code, name, category, category_id, supplier_id, image_url, stock, min_stock, price
-                FROM products
-                WHERE code=%s
-            """, (code,))
-            return cur.fetchone()
-
+# =========================
+# VENTAS / KARDEX
+# =========================
 
 def create_sale_full(
     document_type: str,
@@ -642,7 +653,6 @@ def create_sale_full(
         conn.commit()
 
     electronic_document_id, full_number = create_electronic_document_record(sale_id, document_type)
-
     return sale_id, electronic_document_id, full_number
 
 
@@ -749,6 +759,10 @@ def list_kardex(product_code: str = "", limit: int = 200):
                 """, (limit,))
             return cur.fetchall()
 
+
+# =========================
+# RUTAS
+# =========================
 
 @app.route("/")
 def home():
@@ -885,14 +899,14 @@ def products_list():
         per_page = int(request.args.get("per_page", "10"))
         if per_page not in (5, 10, 25, 50):
             per_page = 10
-    except:
+    except Exception:
         per_page = 10
 
     try:
         page = int(request.args.get("page", "1"))
         if page < 1:
             page = 1
-    except:
+    except Exception:
         page = 1
 
     total = count_products(search)
@@ -926,6 +940,7 @@ def products_new():
 
     if request.method == "POST":
         code = request.form.get("code", "").strip()
+        alt_code = request.form.get("alt_code", "").strip()
         name = request.form.get("name", "").strip()
 
         category_id_raw = request.form.get("category_id", "").strip()
@@ -937,13 +952,16 @@ def products_new():
         stock_raw = request.form.get("stock", "0").strip()
         min_stock_raw = request.form.get("min_stock", "0").strip()
         price_raw = request.form.get("price", "0").strip()
+        price_usd_raw = request.form.get("price_usd", "0").strip()
 
         if not code:
             flash("El código es obligatorio.", "error")
             return redirect(url_for("products_new"))
+
         if not name:
             flash("El nombre es obligatorio.", "error")
             return redirect(url_for("products_new"))
+
         if not category_id:
             flash("Debes seleccionar una categoría.", "error")
             return redirect(url_for("products_new"))
@@ -959,7 +977,7 @@ def products_new():
             stock = int(stock_raw)
             if stock < 0:
                 raise ValueError
-        except:
+        except Exception:
             flash("Stock inválido (0 o más).", "error")
             return redirect(url_for("products_new"))
 
@@ -967,7 +985,7 @@ def products_new():
             min_stock = int(min_stock_raw)
             if min_stock < 0:
                 raise ValueError
-        except:
+        except Exception:
             flash("Stock mínimo inválido (0 o más).", "error")
             return redirect(url_for("products_new"))
 
@@ -975,25 +993,23 @@ def products_new():
             price = float(price_raw.replace(",", "."))
             if price < 0:
                 raise ValueError
-        except:
+        except Exception:
             flash("Precio inválido (0 o más).", "error")
             return redirect(url_for("products_new"))
 
-        image_filename = None
-        file = request.files.get("image_file")
-        if file and file.filename:
-            if not allowed_file(file.filename):
-                flash("Formato de imagen no permitido. Usa PNG/JPG/JPEG/WEBP.", "error")
-                return redirect(url_for("products_new"))
-
-            safe = secure_filename(file.filename)
-            safe = unique_filename(safe)
-            save_path = os.path.join(app.config["UPLOAD_FOLDER"], safe)
-            file.save(save_path)
-            image_filename = safe
+        try:
+            price_usd = float(price_usd_raw.replace(",", "."))
+            if price_usd < 0:
+                raise ValueError
+        except Exception:
+            flash("Precio en dólares inválido (0 o más).", "error")
+            return redirect(url_for("products_new"))
 
         try:
-            create_product(code, name, category, category_id, supplier_id, stock, min_stock, price, image_filename)
+            create_product(
+                code, alt_code, name, category, category_id,
+                supplier_id, stock, min_stock, price, price_usd
+            )
         except psycopg.errors.UniqueViolation:
             flash("Ese código ya existe. Usa otro código.", "error")
             return redirect(url_for("products_new"))
@@ -1027,6 +1043,7 @@ def products_edit(product_id):
 
     if request.method == "POST":
         code = request.form.get("code", "").strip()
+        alt_code = request.form.get("alt_code", "").strip()
         name = request.form.get("name", "").strip()
 
         category_id_raw = request.form.get("category_id", "").strip()
@@ -1038,6 +1055,7 @@ def products_edit(product_id):
         stock_raw = request.form.get("stock", "0").strip()
         min_stock_raw = request.form.get("min_stock", "0").strip()
         price_raw = request.form.get("price", "0").strip()
+        price_usd_raw = request.form.get("price_usd", "0").strip()
 
         if not code:
             flash("El código es obligatorio.", "error")
@@ -1062,7 +1080,7 @@ def products_edit(product_id):
             stock = int(stock_raw)
             if stock < 0:
                 raise ValueError
-        except:
+        except Exception:
             flash("Stock inválido (0 o más).", "error")
             return redirect(url_for("products_edit", product_id=product_id))
 
@@ -1070,7 +1088,7 @@ def products_edit(product_id):
             min_stock = int(min_stock_raw)
             if min_stock < 0:
                 raise ValueError
-        except:
+        except Exception:
             flash("Stock mínimo inválido (0 o más).", "error")
             return redirect(url_for("products_edit", product_id=product_id))
 
@@ -1078,37 +1096,23 @@ def products_edit(product_id):
             price = float(price_raw.replace(",", "."))
             if price < 0:
                 raise ValueError
-        except:
+        except Exception:
             flash("Precio inválido (0 o más).", "error")
             return redirect(url_for("products_edit", product_id=product_id))
 
-        image_filename = p[6]
-        file = request.files.get("image_file")
-
-        if file and file.filename:
-            if not allowed_file(file.filename):
-                flash("Formato de imagen no permitido. Usa PNG/JPG/JPEG/WEBP.", "error")
-                return redirect(url_for("products_edit", product_id=product_id))
-
-            safe = secure_filename(file.filename)
-            safe = unique_filename(safe)
-            save_path = os.path.join(app.config["UPLOAD_FOLDER"], safe)
-            file.save(save_path)
-
-            if image_filename:
-                old_path = os.path.join(app.config["UPLOAD_FOLDER"], image_filename)
-                if os.path.exists(old_path):
-                    try:
-                        os.remove(old_path)
-                    except:
-                        pass
-
-            image_filename = safe
+        try:
+            price_usd = float(price_usd_raw.replace(",", "."))
+            if price_usd < 0:
+                raise ValueError
+        except Exception:
+            flash("Precio en dólares inválido (0 o más).", "error")
+            return redirect(url_for("products_edit", product_id=product_id))
 
         try:
             update_product(
                 product_id,
                 code,
+                alt_code,
                 name,
                 category,
                 category_id,
@@ -1116,7 +1120,7 @@ def products_edit(product_id):
                 stock,
                 min_stock,
                 price,
-                image_filename
+                price_usd
             )
         except psycopg.errors.UniqueViolation:
             flash("Ese código ya existe. Usa otro código.", "error")
@@ -1143,21 +1147,10 @@ def products_delete(product_id):
         return redirect(url_for("login"))
 
     try:
-        image_filename = delete_product(product_id)
-
-        if image_filename:
-            path = os.path.join(app.config["UPLOAD_FOLDER"], image_filename)
-            if os.path.exists(path):
-                try:
-                    os.remove(path)
-                except:
-                    pass
-
+        delete_product(product_id)
         flash("🗑 Producto eliminado.", "ok")
-
     except psycopg.errors.ForeignKeyViolation:
         flash("❌ No se puede eliminar este producto porque ya está registrado en una venta.", "error")
-
     except Exception as e:
         flash(f"Error eliminando producto: {e}", "error")
 
@@ -1182,6 +1175,7 @@ def proveedores_nuevo():
         name = request.form.get("name", "").strip()
         phone = request.form.get("phone", "").strip()
         email = request.form.get("email", "").strip()
+        address = request.form.get("address", "").strip()
         notes = request.form.get("notes", "").strip()
 
         if not name:
@@ -1197,7 +1191,7 @@ def proveedores_nuevo():
             return redirect(url_for("proveedores_nuevo"))
 
         try:
-            create_supplier(name, phone, email, notes)
+            create_supplier(name, phone, email, address, notes)
         except Exception as e:
             flash(f"Error registrando proveedor: {e}", "error")
             return redirect(url_for("proveedores_nuevo"))
@@ -1222,6 +1216,7 @@ def proveedores_edit(supplier_id):
         name = request.form.get("name", "").strip()
         phone = request.form.get("phone", "").strip()
         email = request.form.get("email", "").strip()
+        address = request.form.get("address", "").strip()
         notes = request.form.get("notes", "").strip()
 
         if not name:
@@ -1237,7 +1232,7 @@ def proveedores_edit(supplier_id):
             return redirect(url_for("proveedores_edit", supplier_id=supplier_id))
 
         try:
-            update_supplier(supplier_id, name, phone, email, notes)
+            update_supplier(supplier_id, name, phone, email, address, notes)
         except Exception as e:
             flash(f"Error actualizando proveedor: {e}", "error")
             return redirect(url_for("proveedores_edit", supplier_id=supplier_id))
@@ -1283,7 +1278,8 @@ def cliente_nuevo():
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         phone = request.form.get("phone", "").strip()
-        doc = request.form.get("doc", "").strip()
+        dni = request.form.get("dni", "").strip()
+        ruc = request.form.get("ruc", "").strip()
         email = request.form.get("email", "").strip()
 
         if not name:
@@ -1294,12 +1290,20 @@ def cliente_nuevo():
             flash("El teléfono debe tener exactamente 9 dígitos.", "error")
             return redirect(url_for("cliente_nuevo"))
 
+        if dni and not validate_dni(dni):
+            flash("El DNI debe tener exactamente 8 dígitos.", "error")
+            return redirect(url_for("cliente_nuevo"))
+
+        if ruc and not validate_ruc(ruc):
+            flash("El RUC debe tener exactamente 11 dígitos.", "error")
+            return redirect(url_for("cliente_nuevo"))
+
         if email and not validate_email(email):
             flash("El correo no es válido.", "error")
             return redirect(url_for("cliente_nuevo"))
 
         try:
-            create_customer(name, phone, doc, email)
+            create_customer(name, phone, dni, ruc, email)
         except Exception as e:
             flash(f"Error registrando cliente: {e}", "error")
             return redirect(url_for("cliente_nuevo"))
@@ -1323,7 +1327,8 @@ def cliente_edit(customer_id):
     if request.method == "POST":
         name = request.form.get("name", "").strip()
         phone = request.form.get("phone", "").strip()
-        doc = request.form.get("doc", "").strip()
+        dni = request.form.get("dni", "").strip()
+        ruc = request.form.get("ruc", "").strip()
         email = request.form.get("email", "").strip()
 
         if not name:
@@ -1334,12 +1339,20 @@ def cliente_edit(customer_id):
             flash("El teléfono debe tener exactamente 9 dígitos.", "error")
             return redirect(url_for("cliente_edit", customer_id=customer_id))
 
+        if dni and not validate_dni(dni):
+            flash("El DNI debe tener exactamente 8 dígitos.", "error")
+            return redirect(url_for("cliente_edit", customer_id=customer_id))
+
+        if ruc and not validate_ruc(ruc):
+            flash("El RUC debe tener exactamente 11 dígitos.", "error")
+            return redirect(url_for("cliente_edit", customer_id=customer_id))
+
         if email and not validate_email(email):
             flash("El correo no es válido.", "error")
             return redirect(url_for("cliente_edit", customer_id=customer_id))
 
         try:
-            update_customer(customer_id, name, phone, doc, email)
+            update_customer(customer_id, name, phone, dni, ruc, email)
         except Exception as e:
             flash(f"Error actualizando cliente: {e}", "error")
             return redirect(url_for("cliente_edit", customer_id=customer_id))
@@ -1383,7 +1396,8 @@ def venta_nueva():
         customer_id = int(customer_id_raw) if customer_id_raw else None
 
         customer_name = request.form.get("customer_name", "").strip()
-        customer_doc = request.form.get("customer_doc", "").strip()
+        customer_dni = request.form.get("customer_dni", "").strip()
+        customer_ruc = request.form.get("customer_ruc", "").strip()
         customer_phone = request.form.get("customer_phone", "").strip()
         customer_email = request.form.get("customer_email", "").strip()
         customer_address = request.form.get("customer_address", "").strip()
@@ -1392,16 +1406,17 @@ def venta_nueva():
 
         try:
             items = json.loads(items_json)
-        except:
+        except Exception:
             items = []
 
         if customer_id:
             customer = get_customer_full(customer_id)
             if customer:
                 customer_name = customer[1] or customer_name
-                customer_doc = customer[3] or customer_doc
-                customer_email = customer[4] or customer_email
-                customer_address = customer[5] or customer_address
+                customer_dni = customer[3] or customer_dni
+                customer_ruc = customer[4] or customer_ruc
+                customer_email = customer[5] or customer_email
+                customer_address = customer[6] or customer_address
         else:
             if not customer_name:
                 flash("Debes ingresar el nombre o razón social del cliente.", "error")
@@ -1411,6 +1426,14 @@ def venta_nueva():
                 flash("El teléfono del cliente debe tener 9 dígitos.", "error")
                 return redirect(url_for("venta_nueva"))
 
+            if customer_dni and not validate_dni(customer_dni):
+                flash("El DNI del cliente debe tener 8 dígitos.", "error")
+                return redirect(url_for("venta_nueva"))
+
+            if customer_ruc and not validate_ruc(customer_ruc):
+                flash("El RUC del cliente debe tener 11 dígitos.", "error")
+                return redirect(url_for("venta_nueva"))
+
             if customer_email and not validate_email(customer_email):
                 flash("El correo del cliente no es válido.", "error")
                 return redirect(url_for("venta_nueva"))
@@ -1418,10 +1441,32 @@ def venta_nueva():
             customer_id = create_customer_quick(
                 customer_name,
                 customer_phone,
-                customer_doc,
+                customer_dni,
+                customer_ruc,
                 customer_email,
                 customer_address
             )
+
+        if document_type == "FACTURA":
+            customer_doc = customer_ruc
+            if not customer_name:
+                flash("Debes ingresar la razón social del cliente.", "error")
+                return redirect(url_for("venta_nueva"))
+            if not validate_ruc(customer_doc):
+                flash("Para FACTURA debes ingresar un RUC válido de 11 dígitos.", "error")
+                return redirect(url_for("venta_nueva"))
+
+        elif document_type == "BOLETA":
+            customer_doc = customer_dni
+            if not customer_name:
+                flash("Debes ingresar el nombre del cliente.", "error")
+                return redirect(url_for("venta_nueva"))
+            if not validate_dni(customer_doc):
+                flash("Para BOLETA debes ingresar un DNI válido de 8 dígitos.", "error")
+                return redirect(url_for("venta_nueva"))
+
+        else:
+            customer_doc = customer_ruc or customer_dni
 
         try:
             sale_id, electronic_document_id, full_number = create_sale_full(

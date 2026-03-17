@@ -128,13 +128,18 @@ input:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3px rgba(31,102,2
             </div>
 
             <div class="field">
-              <label>DNI / RUC</label>
-              <input name="doc" value="{{ customer[3] or '' }}">
+              <label>DNI</label>
+              <input name="dni" value="{{ customer[3] or '' }}" maxlength="8">
+            </div>
+
+            <div class="field">
+              <label>RUC</label>
+              <input name="ruc" value="{{ customer[4] or '' }}" maxlength="11">
             </div>
 
             <div class="field" style="grid-column:1/-1;">
               <label>EMAIL</label>
-              <input name="email" value="{{ customer[4] or '' }}">
+              <input name="email" value="{{ customer[5] or '' }}">
             </div>
 
           </div>

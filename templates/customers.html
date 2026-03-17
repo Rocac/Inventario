@@ -322,7 +322,8 @@
                   <th>N°</th>
                   <th>Nombre</th>
                   <th>Teléfono</th>
-                  <th>DNI / RUC</th>
+                  <th>DNI</th>
+                  <th>RUC</th>
                   <th>Email</th>
                   <th>Opciones</th>
                 </tr>
@@ -335,6 +336,7 @@
                     <td>{{ c[2] or '-' }}</td>
                     <td>{{ c[3] or '-' }}</td>
                     <td>{{ c[4] or '-' }}</td>
+                    <td>{{ c[5] or '-' }}</td>
                     <td>
                       <div class="actions">
                         <a href="/clientes/{{ c[0] }}/editar" class="btn warn">✏️ Editar</a>

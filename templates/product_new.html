@@ -302,7 +302,7 @@
         {% endif %}
       {% endwith %}
 
-      <form method="POST" enctype="multipart/form-data" class="card">
+      <form method="POST" class="card">
         <div class="card-header">
           <b>📦 Datos del producto</b>
           <span style="font-size:12px;color:#64748b;font-weight:800">
@@ -315,6 +315,11 @@
             <div>
               <label>CÓDIGO DEL PRODUCTO *</label>
               <input type="text" name="code" placeholder="Ej: RES-220-01" required>
+            </div>
+
+            <div>
+              <label>CÓDIGO ALTERNO</label>
+              <input type="text" name="alt_code" placeholder="Ej: COD-SEC-01">
             </div>
 
             <div>
@@ -354,19 +359,18 @@
             </div>
 
             <div>
-              <label>PRECIO (S/.) *</label>
+              <label>PRECIO EN SOLES (S/.) *</label>
               <input type="number" name="price" step="0.01" min="0" value="0" required>
             </div>
 
             <div>
-              <label>IMAGEN</label>
-              <input type="file" name="image_file" accept=".png,.jpg,.jpeg,.webp">
-              <div class="hint">Formatos permitidos: PNG, JPG, JPEG, WEBP.</div>
+              <label>PRECIO EN DÓLARES ($) *</label>
+              <input type="number" name="price_usd" step="0.01" min="0" value="0" required>
             </div>
 
             <div class="full">
               <div class="hint">
-                Tip: usa códigos cortos y ordenados para que luego la búsqueda por código sea más rápida.
+                Tip: puedes buscar luego por código principal o código alterno.
               </div>
             </div>
           </div>
@@ -383,4 +387,4 @@
 </div>
 
 </body>
-</html>
+</html> 

@@ -323,6 +323,7 @@
                   <th>Nombre</th>
                   <th>Teléfono</th>
                   <th>Email</th>
+                  <th>Dirección</th>
                   <th>Notas</th>
                   <th>Opciones</th>
                 </tr>
@@ -335,6 +336,7 @@
                     <td>{{ s[2] or '-' }}</td>
                     <td>{{ s[3] or '-' }}</td>
                     <td>{{ s[4] or '-' }}</td>
+                    <td>{{ s[5] or '-' }}</td>
                     <td>
                       <div class="actions">
                         <a href="/proveedores/{{ s[0] }}/editar" class="btn warn">✏️ Editar</a>

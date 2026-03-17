@@ -91,7 +91,6 @@ input:focus,textarea:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3p
     <div class="page">
       <h1>Editar proveedor</h1>
 
-      <!-- supplier = (id, name, phone, email, notes) -->
       <form class="card" method="POST">
         <div class="card-header">
           <b>✏ Datos del proveedor</b>
@@ -101,12 +100,12 @@ input:focus,textarea:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3p
         <div class="card-body">
           <div class="grid">
             <div class="full">
-              <label>NOMBRE *</label>
+              <label>NOMBRE</label>
               <input name="name" value="{{ supplier[1] }}" required>
             </div>
 
             <div>
-                <label>TELÉFONO (9 dígitos)</label>
+                <label>TELÉFONO</label>
                 <input name="phone"
                     value="{{ supplier[2] or '' }}"
                     inputmode="numeric"
@@ -123,8 +122,13 @@ input:focus,textarea:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3p
             </div>
 
             <div class="full">
+              <label>DIRECCIÓN</label>
+              <input name="address" value="{{ supplier[4] or '' }}" placeholder="Ej: Av. Principal 123, Ica">
+            </div>
+
+            <div class="full">
               <label>NOTAS</label>
-              <textarea name="notes">{{ supplier[4] or '' }}</textarea>
+              <textarea name="notes">{{ supplier[5] or '' }}</textarea>
             </div>
           </div>
         </div>
