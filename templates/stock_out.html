@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salidas</title>
+<link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
+
+<style>
+:root{
+  --bg:#f3f6fb;
+  --sidebar1:#c62828;
+  --sidebar2:#ef5350;
+  --topbar:#c62828;
+  --primary:#c62828;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#e5e7eb;
+  --shadow:0 12px 28px rgba(0,0,0,.10);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));color:#fff;padding:18px 14px;position:sticky;top:0;height:100vh}
+.brand,.profile{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.12);margin-bottom:14px}
+.profile{background:rgba(255,255,255,.10)}
+.logo,.avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.18)}
+.menu-title{margin:14px 10px 8px;font-size:11px;opacity:.85;letter-spacing:.14em}
+.nav a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;color:#fff;text-decoration:none;opacity:.95}
+.nav a:hover{background:rgba(255,255,255,.12)}
+.nav a.active{background:rgba(255,255,255,.18);font-weight:800}
+
+.content{display:flex;flex-direction:column}
+.topbar{background:var(--topbar);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 8px 16px rgba(0,0,0,.10)}
+.page{padding:18px}
+h1{margin:0 0 14px;font-size:26px}
+
+.flash{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;margin-bottom:12px}
+.flash.error{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.07)}
+.flash.ok{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.07)}
+
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;max-width:900px}
+.card-header{padding:12px 14px;border-bottom:1px solid var(--line);background:#f8fbff;font-weight:800}
+.card-body{padding:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.full{grid-column:1/-1}
+label{display:block;font-size:12px;font-weight:900;color:var(--muted);margin-bottom:6px;letter-spacing:.06em}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:14px;outline:none;font-size:14px;background:#fff}
+textarea{min-height:100px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3px rgba(31,102,255,.12)}
+.actions{display:flex;gap:10px;justify-content:flex-end;padding:14px;border-top:1px solid var(--line);background:#fff;flex-wrap:wrap}
+.btn{padding:10px 14px;border-radius:12px;border:1px solid var(--line);text-decoration:none;font-weight:800;font-size:13px;cursor:pointer;background:#fff;color:var(--text)}
+.primary{background:#2563eb;color:#fff;border:none}
+
+@media(max-width:980px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:relative;height:auto}
+  .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">📤</div>
+      <div><b>Inventarios</b><br><span style="font-size:12px">Salidas</span></div>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">👤</div>
+      <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
+    </div>
+
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio">🏠 Inicio</a>
+    </nav>
+
+    <div class="menu-title">MANTENIMIENTOS</div>
+    <nav class="nav">
+      <a href="/categorias">🏷️ Categorías</a>
+      <a href="/productos">📦 Productos</a>
+      <a href="/proveedores">🏭 Proveedores</a>
+      <a href="/clientes">🧑 Clientes</a>
+    </nav>
+
+    <div class="menu-title">OPERACIONES</div>
+    <nav class="nav">
+      <a href="/salidas" class="active">📤 Salidas</a>
+      <a href="/ventas">🧾 Historial de ventas</a>
+      <a href="/kardex">📒 Kardex</a>
+    </nav>
+
+    <div class="menu-title">SESIÓN</div>
+    <nav class="nav">
+      <a href="{{ url_for('logout') }}">🚪 Salir</a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div style="font-weight:900">Salidas</div>
+    </div>
+
+    <div class="page">
+      <h1>Registrar salida de inventario</h1>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" class="card">
+        <div class="card-header">Datos de salida</div>
+
+        <div class="card-body">
+          <div class="grid">
+            <div class="full">
+              <label>PRODUCTO</label>
+              <select name="product_id" required>
+                <option value="">-- Seleccionar producto --</option>
+                {% for p in products %}
+                  <option value="{{ p[0] }}">
+                    {{ p[1] }} - {{ p[2] }} (Stock actual: {{ p[3] }})
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div>
+              <label>CANTIDAD</label>
+              <input type="number" name="qty" min="1" required>
+            </div>
+
+            <div>
+              <label>MOTIVO</label>
+              <select name="reason" required>
+                <option value="">-- Seleccionar motivo --</option>
+                <option value="Venta manual">Venta manual</option>
+                <option value="Producto dañado">Producto dañado</option>
+                <option value="Uso interno">Uso interno</option>
+                <option value="Pérdida">Pérdida</option>
+                <option value="Ajuste">Ajuste</option>
+                <option value="Muestra">Muestra</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <a href="/inicio" class="btn">Cancelar</a>
+          <button type="submit" class="btn primary">Registrar salida</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

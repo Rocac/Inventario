@@ -29,16 +29,20 @@ def login_required() -> bool:
     return "user_id" in session
 
 
-PHONE_9_RE = re.compile(r"^\d{9}$")
+PHONE_RE = re.compile(r"^[\d\+\-\(\)\s]{7,20}$")
+def validate_phone(phone: str) -> bool:
+    if not phone:
+        return True
+    return bool(PHONE_RE.match(phone))
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$")
 DNI_RE = re.compile(r"^\d{8}$")
 RUC_RE = re.compile(r"^\d{11}$")
 
 
-def validate_phone_9(phone: str) -> bool:
+def validate_phone(phone: str) -> bool:
     if not phone:
         return True
-    return bool(PHONE_9_RE.match(phone))
+    return bool(PHONE_RE.match(phone))
 
 
 def validate_email(email: str) -> bool:
@@ -547,8 +551,149 @@ def delete_product(product_id: int):
 
 
 # =========================
-# VENTAS / KARDEX
+# DASHBOARD / SALIDAS / VENTAS / KARDEX
 # =========================
+
+def get_dashboard_summary():
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM products")
+            total_products = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM categories")
+            total_categories = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM suppliers")
+            total_suppliers = cur.fetchone()[0]
+
+            cur.execute("SELECT COUNT(*) FROM customers")
+            total_customers = cur.fetchone()[0]
+
+            cur.execute("SELECT COALESCE(SUM(stock), 0) FROM products")
+            total_stock_units = cur.fetchone()[0]
+
+            cur.execute("""
+                SELECT code, name, stock, min_stock
+                FROM products
+                WHERE stock <= min_stock
+                ORDER BY stock ASC, name ASC
+                LIMIT 10
+            """)
+            low_stock = cur.fetchall()
+
+            cur.execute("""
+                SELECT
+                    p.code,
+                    p.name,
+                    COALESCE(SUM(k.qty), 0) AS total_out
+                FROM kardex k
+                JOIN products p ON p.id = k.product_id
+                WHERE k.movement = 'SALIDA'
+                GROUP BY p.code, p.name
+                ORDER BY total_out DESC, p.name ASC
+                LIMIT 10
+            """)
+            top_outputs = cur.fetchall()
+
+            cur.execute("""
+                SELECT
+                    p.code,
+                    p.name,
+                    COALESCE(SUM(k.qty), 0) AS total_in
+                FROM kardex k
+                JOIN products p ON p.id = k.product_id
+                WHERE k.movement = 'ENTRADA'
+                GROUP BY p.code, p.name
+                ORDER BY total_in DESC, p.name ASC
+                LIMIT 10
+            """)
+            top_inputs = cur.fetchall()
+
+            cur.execute("""
+                SELECT
+                    TO_CHAR(k.created_at, 'DD-MM-YYYY HH24:MI:SS') AS created_at,
+                    p.code,
+                    p.name,
+                    k.movement,
+                    k.qty,
+                    k.stock_after,
+                    COALESCE(k.note, '-') AS note
+                FROM kardex k
+                JOIN products p ON p.id = k.product_id
+                ORDER BY k.created_at DESC, k.id DESC
+                LIMIT 10
+            """)
+            recent_moves = cur.fetchall()
+
+    return {
+        "total_products": total_products,
+        "total_categories": total_categories,
+        "total_suppliers": total_suppliers,
+        "total_customers": total_customers,
+        "total_stock_units": total_stock_units,
+        "low_stock": low_stock,
+        "top_outputs": top_outputs,
+        "top_inputs": top_inputs,
+        "recent_moves": recent_moves,
+    }
+
+
+def register_stock_output(product_id: int, qty: int, reason: str, note: str):
+    if qty <= 0:
+        raise ValueError("La cantidad debe ser mayor a 0.")
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT id, code, name, stock
+                FROM products
+                WHERE id = %s
+            """, (product_id,))
+            product = cur.fetchone()
+
+            if not product:
+                raise ValueError("El producto no existe.")
+
+            db_product_id, code, name, stock = product
+
+            if stock < qty:
+                raise ValueError(f"Stock insuficiente para {name}. Stock actual: {stock}.")
+
+            cur.execute("""
+                UPDATE products
+                SET stock = stock - %s
+                WHERE id = %s
+                RETURNING stock
+            """, (qty, db_product_id))
+            new_stock = cur.fetchone()[0]
+
+            full_note = reason.strip()
+            if note.strip():
+                full_note = f"{reason.strip()} - {note.strip()}"
+
+            cur.execute("""
+                INSERT INTO kardex (product_id, movement, qty, stock_after, ref_table, ref_id, note)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (
+                db_product_id,
+                "SALIDA",
+                qty,
+                new_stock,
+                "manual_output",
+                0,
+                full_note
+            ))
+
+        conn.commit()
+
+    return {
+        "product_id": db_product_id,
+        "code": code,
+        "name": name,
+        "qty": qty,
+        "stock_after": new_stock
+    }
+
 
 def create_sale_full(
     document_type: str,
@@ -760,6 +905,57 @@ def list_kardex(product_code: str = "", limit: int = 200):
             return cur.fetchall()
 
 
+def delete_all_sales_history():
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM electronic_document_logs")
+            cur.execute("DELETE FROM electronic_documents")
+            cur.execute("DELETE FROM sale_items")
+            cur.execute("DELETE FROM kardex WHERE ref_table IN ('sales', 'manual_output')")
+            cur.execute("DELETE FROM sales")
+        conn.commit()
+
+
+def delete_sale_by_id(sale_id: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                DELETE FROM electronic_document_logs
+                WHERE electronic_document_id IN (
+                    SELECT id FROM electronic_documents WHERE sale_id = %s
+                )
+            """, (sale_id,))
+
+            cur.execute("""
+                DELETE FROM electronic_documents
+                WHERE sale_id = %s
+            """, (sale_id,))
+
+            cur.execute("""
+                DELETE FROM kardex
+                WHERE ref_table = 'sales' AND ref_id = %s
+            """, (sale_id,))
+
+            cur.execute("""
+                DELETE FROM sale_items
+                WHERE sale_id = %s
+            """, (sale_id,))
+
+            cur.execute("""
+                DELETE FROM sales
+                WHERE id = %s
+            """, (sale_id,))
+
+        conn.commit()
+
+
+def delete_kardex_move(kardex_id: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM kardex WHERE id = %s", (kardex_id,))
+        conn.commit()
+
+
 # =========================
 # RUTAS
 # =========================
@@ -779,7 +975,7 @@ def login():
         if user:
             session["user_id"] = user[0]
             session["username"] = user[1]
-            return redirect(url_for("products_list"))
+            return redirect(url_for("dashboard"))
 
         flash("Usuario o contraseña incorrectos", "error")
         return redirect(url_for("login"))
@@ -791,6 +987,19 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for("login"))
+
+
+@app.route("/inicio")
+def dashboard():
+    if not login_required():
+        return redirect(url_for("login"))
+
+    data = get_dashboard_summary()
+    return render_template(
+        "dashboard.html",
+        username=session.get("username"),
+        data=data
+    )
 
 
 @app.route("/categorias")
@@ -1182,8 +1391,8 @@ def proveedores_nuevo():
             flash("El nombre del proveedor es obligatorio.", "error")
             return redirect(url_for("proveedores_nuevo"))
 
-        if phone and not validate_phone_9(phone):
-            flash("El teléfono debe tener exactamente 9 dígitos.", "error")
+        if phone and not validate_phone(phone):
+            flash("El teléfono debe tener entre 7 y 15 dígitos. Puede incluir + al inicio.", "error")
             return redirect(url_for("proveedores_nuevo"))
 
         if email and not validate_email(email):
@@ -1223,8 +1432,8 @@ def proveedores_edit(supplier_id):
             flash("El nombre del proveedor es obligatorio.", "error")
             return redirect(url_for("proveedores_edit", supplier_id=supplier_id))
 
-        if phone and not validate_phone_9(phone):
-            flash("El teléfono debe tener exactamente 9 dígitos.", "error")
+        if phone and not validate_phone(phone):
+            flash("El teléfono debe tener entre 7 y 15 dígitos. Puede incluir + al inicio.", "error")
             return redirect(url_for("proveedores_edit", supplier_id=supplier_id))
 
         if email and not validate_email(email):
@@ -1286,8 +1495,8 @@ def cliente_nuevo():
             flash("El nombre del cliente es obligatorio.", "error")
             return redirect(url_for("cliente_nuevo"))
 
-        if phone and not validate_phone_9(phone):
-            flash("El teléfono debe tener exactamente 9 dígitos.", "error")
+        if phone and not validate_phone(phone):
+            flash("El teléfono debe tener entre 7 y 15 dígitos. Puede incluir + al inicio.", "error")
             return redirect(url_for("cliente_nuevo"))
 
         if dni and not validate_dni(dni):
@@ -1335,8 +1544,8 @@ def cliente_edit(customer_id):
             flash("El nombre del cliente es obligatorio.", "error")
             return redirect(url_for("cliente_edit", customer_id=customer_id))
 
-        if phone and not validate_phone_9(phone):
-            flash("El teléfono debe tener exactamente 9 dígitos.", "error")
+        if phone and not validate_phone(phone):
+            flash("El teléfono debe tener entre 7 y 15 dígitos. Puede incluir + al inicio.", "error")
             return redirect(url_for("cliente_edit", customer_id=customer_id))
 
         if dni and not validate_dni(dni):
@@ -1381,6 +1590,61 @@ def cliente_delete(customer_id):
     return redirect(url_for("clientes"))
 
 
+@app.route("/salidas", methods=["GET", "POST"])
+def stock_out():
+    if not login_required():
+        return redirect(url_for("login"))
+
+    products = get_products_for_sale()
+
+    if request.method == "POST":
+        product_id_raw = request.form.get("product_id", "").strip()
+        qty_raw = request.form.get("qty", "").strip()
+        reason = request.form.get("reason", "").strip()
+        note = ""
+
+        if not product_id_raw:
+            flash("Debes seleccionar un producto.", "error")
+            return redirect(url_for("stock_out"))
+
+        if not reason:
+            flash("Debes seleccionar un motivo.", "error")
+            return redirect(url_for("stock_out"))
+
+        try:
+            product_id = int(product_id_raw)
+        except Exception:
+            flash("Producto inválido.", "error")
+            return redirect(url_for("stock_out"))
+
+        try:
+            qty = int(qty_raw)
+        except Exception:
+            flash("Cantidad inválida.", "error")
+            return redirect(url_for("stock_out"))
+
+        try:
+            result = register_stock_output(product_id, qty, reason, note)
+        except ValueError as e:
+            flash(str(e), "error")
+            return redirect(url_for("stock_out"))
+        except Exception as e:
+            flash(f"Error registrando salida: {e}", "error")
+            return redirect(url_for("stock_out"))
+
+        flash(
+            f"✅ Salida registrada: {result['qty']} unidad(es) de {result['name']}. Stock actual: {result['stock_after']}",
+            "ok"
+        )
+        return redirect(url_for("stock_out"))
+
+    return render_template(
+        "stock_out.html",
+        username=session.get("username"),
+        products=products
+    )
+
+
 @app.route("/ventas/nueva", methods=["GET", "POST"])
 def venta_nueva():
     if not login_required():
@@ -1422,8 +1686,8 @@ def venta_nueva():
                 flash("Debes ingresar el nombre o razón social del cliente.", "error")
                 return redirect(url_for("venta_nueva"))
 
-            if customer_phone and not validate_phone_9(customer_phone):
-                flash("El teléfono del cliente debe tener 9 dígitos.", "error")
+            if customer_phone and not validate_phone(phone=customer_phone):
+                flash("El teléfono del cliente debe tener entre 7 y 15 dígitos. Puede incluir + al inicio.", "error")
                 return redirect(url_for("venta_nueva"))
 
             if customer_dni and not validate_dni(customer_dni):
@@ -1503,6 +1767,34 @@ def ventas():
 
     sales = list_sales()
     return render_template("sales.html", username=session.get("username"), sales=sales)
+
+
+@app.route("/ventas/eliminar_historial", methods=["POST"])
+def ventas_delete_all():
+    if not login_required():
+        return redirect(url_for("login"))
+
+    try:
+        delete_all_sales_history()
+        flash("🗑 Historial de ventas eliminado correctamente.", "ok")
+    except Exception as e:
+        flash(f"Error eliminando historial de ventas: {e}", "error")
+
+    return redirect(url_for("ventas"))
+
+
+@app.route("/ventas/<int:sale_id>/eliminar", methods=["POST"])
+def ventas_delete_one(sale_id):
+    if not login_required():
+        return redirect(url_for("login"))
+
+    try:
+        delete_sale_by_id(sale_id)
+        flash("🗑 Venta eliminada correctamente.", "ok")
+    except Exception as e:
+        flash(f"Error eliminando venta: {e}", "error")
+
+    return redirect(url_for("ventas"))
 
 
 @app.route("/ventas/<int:sale_id>")
@@ -1591,6 +1883,20 @@ def kardex():
         code=code,
         rows=rows
     )
+
+
+@app.route("/kardex/<int:kardex_id>/eliminar", methods=["POST"])
+def kardex_delete(kardex_id):
+    if not login_required():
+        return redirect(url_for("login"))
+
+    try:
+        delete_kardex_move(kardex_id)
+        flash("🗑 Movimiento de kardex eliminado.", "ok")
+    except Exception as e:
+        flash(f"Error eliminando movimiento: {e}", "error")
+
+    return redirect(url_for("kardex"))
 
 
 if __name__ == "__main__":

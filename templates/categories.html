@@ -4,77 +4,252 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Categorías</title>
+  <link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
 
   <style>
     :root{
       --bg:#f3f6fb;
-      --sidebar1:#1f66ff; --sidebar2:#31b8ff;
-      --top:#1f66ff;
-      --card:#fff;
-      --text:#0f172a; --muted:#64748b;
+      --sidebar1:#c62828;
+      --sidebar2:#ef5350;
+      --topbar:#c62828;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
       --line:#e5e7eb;
       --shadow:0 12px 28px rgba(0,0,0,.10);
       --r:14px;
       --ok:#22c55e;
       --warn:#f59e0b;
       --danger:#ef4444;
+      --blue-btn:#2563eb;
     }
+
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
-    .layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:var(--bg);
+      color:var(--text)
+    }
 
-    /* Sidebar */
-    .sidebar{background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));color:#fff;padding:18px 14px;position:sticky;top:0;height:100vh}
-    .brand,.profile{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.12);margin-bottom:14px}
+    .layout{
+      display:grid;
+      grid-template-columns:220px 1fr;
+      min-height:100vh
+    }
+
+    .sidebar{
+      background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
+      color:#fff;
+      padding:14px 12px;
+      position:sticky;
+      top:0;
+      height:100vh
+    }
+
+    .brand,.profile{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.12);
+      margin-bottom:14px
+    }
+
     .profile{background:rgba(255,255,255,.10)}
-    .logo{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.18)}
-    .avatar{width:34px;height:34px;border-radius:999px;background:rgba(255,255,255,.18);display:grid;place-items:center}
-    .menu-title{margin:14px 10px 8px;font-size:11px;opacity:.85;letter-spacing:.14em}
-    .nav a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;color:#fff;text-decoration:none;opacity:.95}
-    .nav a:hover{background:rgba(255,255,255,.12)}
-    .nav a.active{background:rgba(255,255,255,.18);font-weight:800}
+    .logo{
+      width:38px;height:38px;border-radius:12px;
+      display:grid;place-items:center;
+      background:rgba(255,255,255,.18)
+    }
+    .avatar{
+      width:34px;height:34px;border-radius:999px;
+      background:rgba(255,255,255,.18);
+      display:grid;place-items:center
+    }
 
-    /* Content */
-    .content{min-width:0;display:flex;flex-direction:column}
-    .topbar{background:var(--top);color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5;box-shadow:0 8px 16px rgba(0,0,0,.10)}
-    .crumbs{font-size:12px;opacity:.95}
+    .menu-title{
+      margin:14px 8px 8px;
+      font-size:11px;
+      opacity:.9;
+      letter-spacing:.14em;
+      font-weight:700
+    }
+
+    .nav a{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      color:#fff;
+      text-decoration:none;
+      opacity:.95;
+      margin-bottom:4px
+    }
+
+    .nav a:hover{background:rgba(255,255,255,.12)}
+    .nav a.active{
+      background:rgba(255,255,255,.20);
+      font-weight:800
+    }
+
+    .content{
+      min-width:0;
+      display:flex;
+      flex-direction:column
+    }
+
+    .topbar{
+      background:var(--topbar);
+      color:#fff;
+      padding:12px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      position:sticky;
+      top:0;
+      z-index:5;
+      box-shadow:0 8px 16px rgba(0,0,0,.10)
+    }
+
     .page{padding:18px}
     h1{margin:6px 0 14px;font-size:22px}
 
-    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
-    .card-header{
-      padding:12px 14px;border-bottom:1px solid var(--line);background:#f8fbff;
-      display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--r);
+      box-shadow:var(--shadow);
+      overflow:hidden
     }
 
-    .tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    .search{display:flex;align-items:center;gap:8px}
-    .search input{
-      padding:10px 12px;border:1px solid var(--line);border-radius:12px;outline:none;min-width:240px
+    .card-header{
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      background:#f8fbff;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap
     }
-    .search input:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3px rgba(31,102,255,.12)}
+
+    .tools{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap
+    }
+
+    .search{
+      display:flex;
+      align-items:center;
+      gap:8px
+    }
+
+    .search input{
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      outline:none;
+      min-width:200px
+    }
+
+    .search input:focus{
+      border-color:rgba(198,40,40,.45);
+      box-shadow:0 0 0 3px rgba(198,40,40,.12)
+    }
 
     .btn{
-      padding:10px 12px;border-radius:12px;border:1px solid var(--line);
-      text-decoration:none;font-weight:900;font-size:13px;cursor:pointer;background:#fff;color:var(--text);
-      display:inline-flex;gap:8px;align-items:center
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      text-decoration:none;
+      font-weight:900;
+      font-size:13px;
+      cursor:pointer;
+      background:#fff;
+      color:var(--text);
+      display:inline-flex;
+      gap:8px;
+      align-items:center
     }
-    .btn.primary{background:var(--sidebar1);border-color:transparent;color:#fff}
-    .btn.icon{width:40px;justify-content:center}
-    .btn.warn{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.25);color:#7c4a00}
-    .btn.danger{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.25);color:#7f1d1d}
 
-    table{width:100%;border-collapse:separate;border-spacing:0}
-    th,td{padding:12px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}
-    th{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+    .btn.primary{
+      background:var(--blue-btn);
+      border-color:transparent;
+      color:#fff
+    }
+
+    .btn.primary .plus{
+      color:#fff;
+      font-weight:900;
+      font-size:16px;
+      line-height:1
+    }
+
+    .btn.icon{
+      width:36px;
+      height:36px;
+      justify-content:center;
+      padding:0
+    }
+
+    .btn.warn{
+      background:rgba(245,158,11,.10);
+      border-color:rgba(245,158,11,.25);
+      color:#b45309
+    }
+
+    .btn.danger{
+      background:rgba(239,68,68,.08);
+      border-color:rgba(239,68,68,.20);
+      color:#b91c1c
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse
+    }
+
+    th,td{
+      padding:16px 12px;
+      border-bottom:1px solid var(--line);
+      text-align:left;
+      font-size:14px
+    }
+
+    th{
+      font-size:12px;
+      color:var(--muted);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      background:#fff
+    }
+
     tr:hover td{background:#fafcff}
-
     .col-actions{white-space:nowrap;text-align:right}
     .muted{color:var(--muted);font-size:13px}
 
-    .flash{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;margin-bottom:12px}
-    .flash.error{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.07)}
-    .flash.ok{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.07)}
+    .flash{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      margin-bottom:12px
+    }
+
+    .flash.error{
+      border-color:rgba(239,68,68,.35);
+      background:rgba(239,68,68,.07)
+    }
+
+    .flash.ok{
+      border-color:rgba(34,197,94,.35);
+      background:rgba(34,197,94,.07)
+    }
 
     @media(max-width:900px){
       .layout{grid-template-columns:1fr}
@@ -89,14 +264,19 @@
 
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">🏷️</div>
-      <div><b>Inventarios</b><br><span style="font-size:12px">Categorías</span></div>
+      <div class="logo">🏠</div>
+      <div><b>Inventarios</b><br><span style="font-size:12px">Inicio</span></div>
     </div>
 
     <div class="profile">
       <div class="avatar">👤</div>
       <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
     </div>
+
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio">🏠 Inicio</a>
+    </nav>
 
     <div class="menu-title">MANTENIMIENTOS</div>
     <nav class="nav">
@@ -108,7 +288,7 @@
 
     <div class="menu-title">OPERACIONES</div>
     <nav class="nav">
-      <a href="/ventas/nueva">💲 Registrar venta</a>
+      <a href="/salidas">📤 Salidas</a>
       <a href="/ventas">🧾 Historial de ventas</a>
       <a href="/kardex">📒 Kardex</a>
     </nav>
@@ -147,7 +327,9 @@
               <span class="muted">Buscar:</span>
               <input name="q" value="{{ q or '' }}" placeholder="Ej: Resistencia, Relay...">
             </form>
-            <a class="btn primary" href="/categorias/nuevo">➕ Nuevo registro</a>
+            <a class="btn primary" href="/categorias/nuevo">
+              <span class="plus">＋</span> Nuevo registro
+            </a>
           </div>
         </div>
 

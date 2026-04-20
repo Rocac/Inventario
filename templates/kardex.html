@@ -4,17 +4,25 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Kardex</title>
+<link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
 
 <style>
 :root{
-  --bg:#f3f6fb; --sidebar1:#1f66ff; --sidebar2:#31b8ff; --topbar:#1f66ff;
-  --card:#ffffff; --text:#0f172a; --muted:#64748b; --line:#e5e7eb;
-  --shadow:0 12px 28px rgba(0,0,0,.10); --radius:14px;
+  --bg:#f3f6fb;
+  --sidebar1:#c62828;
+  --sidebar2:#ef5350;
+  --topbar:#c62828;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#e5e7eb;
+  --shadow:0 12px 28px rgba(0,0,0,.10);
+  --radius:14px;
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
-.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
-.sidebar{background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));color:#fff;padding:18px 14px;position:sticky;top:0;height:100vh}
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));color:#fff;padding:14px 12px;position:sticky;top:0;height:100vh}
 .brand,.profile{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.12);margin-bottom:14px}
 .profile{background:rgba(255,255,255,.10)}
 .logo{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.18)}
@@ -26,34 +34,85 @@ body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;backgrou
 
 .content{min-width:0;display:flex;flex-direction:column}
 .topbar{background:var(--topbar);color:#fff;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5;box-shadow:0 8px 16px rgba(0,0,0,.10)}
-.crumbs{font-size:12px;opacity:.95}
 .page{padding:18px}
 h1{margin:6px 0 14px;font-size:22px}
 
-.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;max-width:1200px}
-.card-header{padding:12px 14px;border-bottom:1px solid var(--line);background:#f8fbff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.flash{
+  width:100%;
+  margin-bottom:12px;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#fff;
+  font-size:13px;
+}
+.flash.ok{
+  border-color:rgba(22,163,74,.25);
+  background:rgba(22,163,74,.08);
+}
+.flash.error{
+  border-color:rgba(239,68,68,.25);
+  background:rgba(239,68,68,.08);
+}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  width:100%;
+  max-width:none;
+}
+.card-header{
+  padding:12px 14px;
+  border-bottom:1px solid var(--line);
+  background:#f8fbff;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
 
 .btn{
-  padding:10px 12px;border-radius:12px;border:1px solid var(--line);
-  text-decoration:none;font-weight:900;font-size:13px;cursor:pointer;background:#fff;color:var(--text);
-  display:inline-flex;gap:8px;align-items:center
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  text-decoration:none;
+  font-weight:900;
+  font-size:13px;
+  cursor:pointer;
+  background:#fff;
+  color:var(--text);
+  display:inline-flex;
+  gap:8px;
+  align-items:center;
 }
-.primary{background:var(--sidebar1);border-color:transparent;color:#fff}
+.primary{background:#c62828;border-color:transparent;color:#fff}
+.danger{
+  background:#fef2f2;
+  color:#dc2626;
+  border-color:#fca5a5;
+}
 
 .filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 input{
   padding:10px 12px;border:1px solid var(--line);border-radius:12px;outline:none;font-size:14px;background:#fff
 }
-input:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3px rgba(31,102,255,.12)}
+input:focus{border-color:rgba(198,40,40,.45);box-shadow:0 0 0 3px rgba(198,40,40,.12)}
 
-table{width:100%;border-collapse:collapse}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1200px}
 th,td{padding:12px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}
-th{background:#f1f5f9;color:var(--muted);font-size:12px;letter-spacing:.08em}
+th{background:#f1f5f9;color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
 .badge{padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px;border:1px solid var(--line);display:inline-block}
 .badge.in{background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.25)}
 .badge.out{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.25)}
 .badge.adj{background:rgba(245,158,11,.10);border-color:rgba(245,158,11,.25)}
 .empty{padding:18px;color:var(--muted);text-align:center;background:#fff}
+
+.actions{display:flex;gap:8px;align-items:center}
 
 @media(max-width:980px){
   .layout{grid-template-columns:1fr}
@@ -67,14 +126,19 @@ th{background:#f1f5f9;color:var(--muted);font-size:12px;letter-spacing:.08em}
 
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">🏷️</div>
-      <div><b>Inventarios</b><br><span style="font-size:12px">Categorías</span></div>
+      <div class="logo">🏠</div>
+      <div><b>Inventarios</b><br><span style="font-size:12px">Inicio</span></div>
     </div>
 
     <div class="profile">
       <div class="avatar">👤</div>
       <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
     </div>
+
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio">🏠 Inicio</a>
+    </nav>
 
     <div class="menu-title">MANTENIMIENTOS</div>
     <nav class="nav">
@@ -86,7 +150,7 @@ th{background:#f1f5f9;color:var(--muted);font-size:12px;letter-spacing:.08em}
 
     <div class="menu-title">OPERACIONES</div>
     <nav class="nav">
-      <a href="/ventas/nueva">💲 Registrar venta</a>
+      <a href="/salidas">📤 Salidas</a>
       <a href="/ventas">🧾 Historial de ventas</a>
       <a href="/kardex" class="active">📒 Kardex</a>
     </nav>
@@ -105,35 +169,46 @@ th{background:#f1f5f9;color:var(--muted);font-size:12px;letter-spacing:.08em}
     <div class="page">
       <h1>Kardex (movimientos de inventario)</h1>
 
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
       <div class="card">
         <div class="card-header">
           <b>📒 Movimientos</b>
 
           <form class="filters" method="GET" action="/kardex">
-            <input name="code" value="{{ code }}" placeholder="Filtrar por código (exacto)  Ej: R220">
+            <input name="code" value="{{ code }}" placeholder="Filtrar por código (exacto) Ej: R220">
             <button class="btn primary" type="submit">Buscar</button>
             <a class="btn" href="/kardex">Limpiar</a>
           </form>
         </div>
 
         {% if rows and rows|length > 0 %}
-        <table>
-          <thead>
-            <tr>
-              <th>FECHA</th>
-              <th>CÓDIGO</th>
-              <th>PRODUCTO</th>
-              <th>MOVIMIENTO</th>
-              <th>CANTIDAD</th>
-              <th>STOCK FINAL</th>
-              <th>REF</th>
-              <th>NOTA</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for r in rows %}
-              {# r = (id, created_at, code, name, movement, qty, stock_after, ref_table, ref_id, note) #}
+        <div class="table-wrap">
+          <table>
+            <thead>
               <tr>
+                <th>ID</th>
+                <th>Fecha</th>
+                <th>Código</th>
+                <th>Producto</th>
+                <th>Movimiento</th>
+                <th>Cantidad</th>
+                <th>Stock final</th>
+                <th>Ref</th>
+                <th>Nota</th>
+                <th>Opciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in rows %}
+              <tr>
+                <td>{{ r[0] }}</td>
                 <td>{{ r[1] }}</td>
                 <td><b>{{ r[2] }}</b></td>
                 <td>{{ r[3] }}</td>
@@ -152,12 +227,23 @@ th{background:#f1f5f9;color:var(--muted);font-size:12px;letter-spacing:.08em}
                 <td><b>{{ r[6] }}</b></td>
                 <td>{{ r[7] }} {{ r[8] if r[8] != 0 else '' }}</td>
                 <td>{{ r[9] }}</td>
+                <td>
+                  <div class="actions">
+                    <form method="POST"
+                          action="/kardex/{{ r[0] }}/eliminar"
+                          onsubmit="return confirm('¿Eliminar este movimiento del kardex?');"
+                          style="display:inline;">
+                      <button type="submit" class="btn danger">🗑 Eliminar</button>
+                    </form>
+                  </div>
+                </td>
               </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
         {% else %}
-          <div class="empty">No hay movimientos de kardex todavía. Registra una venta para ver una <b>SALIDA</b>.</div>
+          <div class="empty">No hay movimientos de kardex todavía.</div>
         {% endif %}
       </div>
 

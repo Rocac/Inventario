@@ -4,20 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Clientes</title>
+  <link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
 
   <style>
     :root{
-      --bg:#f3f6fb;
-      --sidebar1:#1f66ff;
-      --sidebar2:#31b8ff;
-      --topbar:#1f66ff;
-      --card:#ffffff;
-      --text:#0f172a;
-      --muted:#64748b;
-      --line:#e5e7eb;
-      --shadow:0 12px 28px rgba(0,0,0,.10);
-      --radius:14px;
-    }
+  --bg:#f3f6fb;
+  --sidebar1:#c62828;
+  --sidebar2:#ef5350;
+  --topbar:#c62828;
+  --primary:#c62828;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#e5e7eb;
+  --shadow:0 12px 28px rgba(0,0,0,.10);
+}
 
     *{box-sizing:border-box}
 
@@ -259,17 +260,19 @@
 
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">🏷️</div>
-      <div><b>Inventarios</b><br><span style="font-size:12px">Categorías</span></div>
+      <div class="logo">🏠</div>
+      <div><b>Inventarios</b><br><span style="font-size:12px">Inicio</span></div>
     </div>
 
     <div class="profile">
       <div class="avatar">👤</div>
-      <div>
-        <div style="font-weight:900">{{ username }}</div>
-        <small>Usuario activo</small>
-      </div>
+      <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
     </div>
+
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio" class="active">🏠 Inicio</a>
+    </nav>
 
     <div class="menu-title">MANTENIMIENTOS</div>
     <nav class="nav">
@@ -281,7 +284,7 @@
 
     <div class="menu-title">OPERACIONES</div>
     <nav class="nav">
-      <a href="/ventas/nueva">💲 Registrar venta</a>
+      <a href="/salidas">📤 Salidas</a>
       <a href="/ventas">🧾 Historial de ventas</a>
       <a href="/kardex">📒 Kardex</a>
     </nav>

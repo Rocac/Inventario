@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inicio</title>
+<link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
+
+<style>
+:root{
+  --bg:#f3f6fb;
+  --sidebar1:#c62828;
+  --sidebar2:#ef5350;
+  --topbar:#c62828;
+  --primary:#c62828;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#e5e7eb;
+  --shadow:0 12px 28px rgba(0,0,0,.10);
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));color:#fff;padding:18px 14px;position:sticky;top:0;height:100vh}
+.brand,.profile{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.12);margin-bottom:14px}
+.profile{background:rgba(255,255,255,.10)}
+.logo,.avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.18)}
+.menu-title{margin:14px 10px 8px;font-size:11px;opacity:.85;letter-spacing:.14em}
+.nav a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;color:#fff;text-decoration:none;opacity:.95}
+.nav a:hover{background:rgba(255,255,255,.12)}
+.nav a.active{background:rgba(255,255,255,.18);font-weight:800}
+
+.content{display:flex;flex-direction:column}
+.topbar{background:var(--topbar);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 8px 16px rgba(0,0,0,.10)}
+.page{padding:18px}
+h1{margin:0 0 16px;font-size:26px}
+
+.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+.card-mini{
+  background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
+  padding:16px
+}
+.card-mini .label{font-size:12px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.card-mini .value{font-size:28px;font-weight:900;margin-top:6px}
+
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{
+  background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden
+}
+.card-header{padding:12px 14px;border-bottom:1px solid var(--line);background:#f8fbff;font-weight:800}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse}
+th,td{padding:12px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}
+th{background:#f1f5f9;color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+tbody tr:hover{background:#fafcff}
+.badge-low{display:inline-block;padding:6px 10px;border-radius:999px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-weight:800;font-size:12px}
+.badge-in{display:inline-block;padding:6px 10px;border-radius:999px;background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;font-weight:800;font-size:12px}
+.badge-out{display:inline-block;padding:6px 10px;border-radius:999px;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;font-weight:800;font-size:12px}
+.full{grid-column:1/-1}
+
+@media(max-width:1200px){
+  .cards{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:980px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{position:relative;height:auto}
+  .grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">🏠</div>
+      <div><b>Inventarios</b><br><span style="font-size:12px">Inicio</span></div>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">👤</div>
+      <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
+    </div>
+
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio" class="active">🏠 Inicio</a>
+    </nav>
+
+    <div class="menu-title">MANTENIMIENTOS</div>
+    <nav class="nav">
+      <a href="/categorias">🏷️ Categorías</a>
+      <a href="/productos">📦 Productos</a>
+      <a href="/proveedores">🏭 Proveedores</a>
+      <a href="/clientes">🧑 Clientes</a>
+    </nav>
+
+    <div class="menu-title">OPERACIONES</div>
+    <nav class="nav">
+      <a href="/salidas">📤 Salidas</a>
+      <a href="/ventas">🧾 Historial de ventas</a>
+      <a href="/kardex">📒 Kardex</a>
+    </nav>
+
+    <div class="menu-title">SESIÓN</div>
+    <nav class="nav">
+      <a href="{{ url_for('logout') }}">🚪 Salir</a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div style="font-weight:900">Inicio</div>
+      <div>Resumen general del inventario</div>
+    </div>
+
+    <div class="page">
+      <h1>Panel principal</h1>
+
+      <div class="cards">
+        <div class="card-mini">
+          <div class="label">Productos</div>
+          <div class="value">{{ data.total_products }}</div>
+        </div>
+        <div class="card-mini">
+          <div class="label">Categorías</div>
+          <div class="value">{{ data.total_categories }}</div>
+        </div>
+        <div class="card-mini">
+          <div class="label">Proveedores</div>
+          <div class="value">{{ data.total_suppliers }}</div>
+        </div>
+        <div class="card-mini">
+          <div class="label">Clientes</div>
+          <div class="value">{{ data.total_customers }}</div>
+        </div>
+        <div class="card-mini">
+          <div class="label">Unidades en stock</div>
+          <div class="value">{{ data.total_stock_units }}</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-header">Productos con stock bajo</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Producto</th>
+                  <th>Stock</th>
+                  <th>Mínimo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if data.low_stock %}
+                  {% for p in data.low_stock %}
+                  <tr>
+                    <td>{{ p[0] }}</td>
+                    <td>{{ p[1] }}</td>
+                    <td><span class="badge-low">{{ p[2] }}</span></td>
+                    <td>{{ p[3] }}</td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="4">No hay productos con stock bajo.</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">Productos con más salidas</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Producto</th>
+                  <th>Total salida</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if data.top_outputs %}
+                  {% for p in data.top_outputs %}
+                  <tr>
+                    <td>{{ p[0] }}</td>
+                    <td>{{ p[1] }}</td>
+                    <td><span class="badge-out">{{ p[2] }}</span></td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="3">No hay salidas registradas.</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">Productos con más entradas</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Producto</th>
+                  <th>Total entrada</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if data.top_inputs %}
+                  {% for p in data.top_inputs %}
+                  <tr>
+                    <td>{{ p[0] }}</td>
+                    <td>{{ p[1] }}</td>
+                    <td><span class="badge-in">{{ p[2] }}</span></td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="3">No hay entradas registradas.</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">Últimos movimientos</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Código</th>
+                  <th>Producto</th>
+                  <th>Movimiento</th>
+                  <th>Cant.</th>
+                  <th>Stock final</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if data.recent_moves %}
+                  {% for m in data.recent_moves %}
+                  <tr>
+                    <td>{{ m[0] }}</td>
+                    <td>{{ m[1] }}</td>
+                    <td>{{ m[2] }}</td>
+                    <td>
+                      {% if m[3] == 'ENTRADA' %}
+                        <span class="badge-in">ENTRADA</span>
+                      {% else %}
+                        <span class="badge-out">{{ m[3] }}</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ m[4] }}</td>
+                    <td>{{ m[5] }}</td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="6">No hay movimientos registrados.</td></tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

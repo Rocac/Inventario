@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Historial de ventas</title>
+  <link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
 
   <style>
     :root{
       --bg:#f3f6fb;
-      --sidebar1:#1f66ff;
-      --sidebar2:#31b8ff;
-      --topbar:#1f66ff;
+      --sidebar1:#c62828;
+      --sidebar2:#ef5350;
+      --topbar:#c62828;
       --card:#ffffff;
       --text:#0f172a;
       --muted:#64748b;
@@ -30,14 +31,14 @@
 
     .layout{
       display:grid;
-      grid-template-columns:260px 1fr;
+      grid-template-columns:220px 1fr;
       min-height:100vh;
     }
 
     .sidebar{
       background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
       color:#fff;
-      padding:18px 14px;
+      padding:14px 12px;
       position:sticky;
       top:0;
       height:100vh;
@@ -52,6 +53,8 @@
       background:rgba(255,255,255,.12);
       margin-bottom:14px;
     }
+
+    .profile{background:rgba(255,255,255,.10)}
 
     .logo,.avatar{
       width:38px;
@@ -229,6 +232,12 @@
       border-color:#bfdbfe;
     }
 
+    .danger{
+      background:#fef2f2;
+      color:#dc2626;
+      border-color:#fca5a5;
+    }
+
     .table-footer{
       padding:12px 14px;
       display:flex;
@@ -263,10 +272,10 @@
 
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">🧾</div>
+      <div class="logo">🏠</div>
       <div>
         <b>Inventarios</b><br>
-        <span style="font-size:12px">Historial de ventas</span>
+        <span style="font-size:12px">Inicio</span>
       </div>
     </div>
 
@@ -278,6 +287,11 @@
       </div>
     </div>
 
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio">🏠 Inicio</a>
+    </nav>
+
     <div class="menu-title">MANTENIMIENTOS</div>
     <nav class="nav">
       <a href="/categorias">🏷️ Categorías</a>
@@ -288,7 +302,7 @@
 
     <div class="menu-title">OPERACIONES</div>
     <nav class="nav">
-      <a href="/ventas/nueva">💲 Registrar venta</a>
+      <a href="/salidas">📤 Salidas</a>
       <a href="/ventas" class="active">🧾 Historial de ventas</a>
       <a href="/kardex">📒 Kardex</a>
     </nav>
@@ -320,7 +334,17 @@
       <div class="card">
         <div class="card-header">
           <b>Ventas registradas</b>
-          <a href="/ventas/nueva" class="btn primary">+ Nueva venta</a>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <a href="/ventas/nueva" class="btn primary">+ Nueva venta</a>
+
+            <form method="POST"
+                  action="/ventas/eliminar_historial"
+                  onsubmit="return confirm('¿Seguro que deseas eliminar TODO el historial de ventas? Esta acción no se puede deshacer.');"
+                  style="display:inline;">
+              <button type="submit" class="btn danger">🗑 Eliminar historial</button>
+            </form>
+          </div>
         </div>
 
         <div class="table-wrap">
@@ -349,7 +373,16 @@
                 <td>{{ sale[3] or '-' }}</td>
                 <td class="price">S/ {{ '%.2f'|format(sale[2]) }}</td>
                 <td>
-                  <a href="/ventas/{{ sale[0] }}/comprobante" class="btn soft">Ver detalle</a>
+                  <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+                    <a href="/ventas/{{ sale[0] }}/comprobante" class="btn soft">Ver detalle</a>
+
+                    <form method="POST"
+                          action="/ventas/{{ sale[0] }}/eliminar"
+                          onsubmit="return confirm('¿Seguro que deseas eliminar esta venta?');"
+                          style="display:inline;">
+                      <button type="submit" class="btn danger">Eliminar</button>
+                    </form>
+                  </div>
                 </td>
               </tr>
               {% endfor %}

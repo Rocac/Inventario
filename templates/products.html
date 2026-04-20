@@ -2,45 +2,54 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Productos</title>
+<link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
 
 <style>
 :root{
   --bg:#f3f6fb;
-  --sidebar1:#1f66ff;
-  --sidebar2:#31b8ff;
-  --topbar:#1f66ff;
+  --sidebar1:#c62828;
+  --sidebar2:#ef5350;
+  --topbar:#c62828;
   --card:#ffffff;
   --line:#e5e7eb;
   --radius:14px;
   --shadow:0 12px 28px rgba(0,0,0,.10);
+  --text:#0f172a;
+  --muted:#64748b;
+  --blue:#2563eb;
 }
 
 *{box-sizing:border-box}
 
 body{
   margin:0;
-  font-family:system-ui;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   background:var(--bg);
+  color:var(--text);
 }
 
 .layout{
   display:grid;
-  grid-template-columns:260px 1fr;
+  grid-template-columns:220px 1fr;
   min-height:100vh;
 }
 
 .sidebar{
   background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
   color:#fff;
-  padding:18px 14px;
+  padding:14px 12px;
+  position:sticky;
+  top:0;
+  height:100vh;
 }
 
 .brand,.profile{
   display:flex;
   gap:10px;
   align-items:center;
-  padding:10px;
+  padding:10px 12px;
   border-radius:12px;
   background:rgba(255,255,255,.12);
   margin-bottom:14px;
@@ -58,8 +67,8 @@ body{
 .menu-title{
   margin:14px 10px 8px;
   font-size:11px;
-  opacity:.8;
-  letter-spacing:.1em;
+  opacity:.85;
+  letter-spacing:.14em;
 }
 
 .nav a{
@@ -73,17 +82,18 @@ body{
 }
 
 .nav a:hover{
-  background:rgba(255,255,255,.15);
+  background:rgba(255,255,255,.12);
 }
 
 .nav a.active{
-  background:rgba(255,255,255,.25);
-  font-weight:700;
+  background:rgba(255,255,255,.18);
+  font-weight:800;
 }
 
 .content{
   display:flex;
   flex-direction:column;
+  min-width:0;
 }
 
 .topbar{
@@ -92,6 +102,11 @@ body{
   padding:12px 18px;
   display:flex;
   justify-content:space-between;
+  align-items:center;
+  box-shadow:0 8px 16px rgba(0,0,0,.10);
+  position:sticky;
+  top:0;
+  z-index:5;
 }
 
 .page{
@@ -100,22 +115,26 @@ body{
 
 h1{
   margin:6px 0 14px;
+  font-size:22px;
 }
 
 .flash{
-  padding:10px;
-  margin-bottom:10px;
-  border-radius:10px;
+  padding:10px 12px;
+  margin-bottom:12px;
+  border-radius:12px;
+  border:1px solid var(--line);
+  background:#fff;
+  font-size:13px;
 }
 
 .flash.ok{
-  background:#e6f9ed;
-  border:1px solid #b7f1c7;
+  border-color:rgba(22,163,74,.25);
+  background:rgba(22,163,74,.08);
 }
 
 .flash.error{
-  background:#ffeaea;
-  border:1px solid #ffbaba;
+  border-color:rgba(239,68,68,.25);
+  background:rgba(239,68,68,.08);
 }
 
 .search-box{
@@ -132,26 +151,53 @@ h1{
 
 .search-box input,
 .search-box select{
-  padding:8px;
-  border-radius:8px;
+  padding:10px 12px;
+  border-radius:10px;
   border:1px solid var(--line);
+  font-size:14px;
+  outline:none;
+  background:#fff;
+}
+
+.search-box input:focus,
+.search-box select:focus{
+  border-color:rgba(198,40,40,.40);
+  box-shadow:0 0 0 3px rgba(198,40,40,.10);
 }
 
 .search-spacer{
   margin-left:auto;
 }
-
+.dots{
+  min-width:36px;
+  height:36px;
+  padding:0 10px;
+  border-radius:10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+  font-size:13px;
+  color:var(--muted);
+}
 .btn{
   padding:10px 14px;
   border-radius:12px;
   border:1px solid var(--line);
   cursor:pointer;
-  font-weight:600;
+  font-weight:700;
   text-decoration:none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font-size:13px;
+  background:#fff;
+  color:var(--text);
 }
 
 .primary{
-  background:#2563eb;
+  background:var(--blue);
   color:#fff;
   border:none;
 }
@@ -169,8 +215,10 @@ h1{
   border-bottom:1px solid var(--line);
   display:flex;
   justify-content:space-between;
+  align-items:center;
   flex-wrap:wrap;
   gap:10px;
+  background:#fff;
 }
 
 .table-wrap{
@@ -180,7 +228,7 @@ h1{
 table{
   width:100%;
   border-collapse:collapse;
-  min-width:1100px;
+  min-width:1200px;
 }
 
 thead th{
@@ -189,12 +237,16 @@ thead th{
   font-size:12px;
   text-transform:uppercase;
   text-align:center;
+  color:#64748b;
+  border-bottom:1px solid var(--line);
 }
 
 tbody td{
   padding:12px;
   border-bottom:1px solid var(--line);
   text-align:center;
+  font-size:14px;
+  vertical-align:middle;
 }
 
 tbody tr:hover{
@@ -202,33 +254,28 @@ tbody tr:hover{
 }
 
 .code-badge{
-  background:#eef4ff;
-  padding:6px 12px;
+  background:#eef2ff;
+  padding:8px 12px;
   border-radius:20px;
-  font-weight:700;
+  font-weight:800;
   display:inline-block;
-}
-
-.alt-badge{
-  background:#f3f4f6;
-  padding:6px 12px;
-  border-radius:20px;
-  font-weight:700;
-  display:inline-block;
+  line-height:1.25;
 }
 
 .stock{
-  background:#eef4ff;
+  background:#eef2ff;
   padding:6px 12px;
   border-radius:20px;
-  font-weight:700;
+  font-weight:800;
   display:inline-block;
+  min-width:28px;
 }
 
 .actions{
   display:flex;
   justify-content:center;
   gap:8px;
+  flex-wrap:wrap;
 }
 
 .btn-icon{
@@ -241,11 +288,12 @@ tbody tr:hover{
   align-items:center;
   justify-content:center;
   cursor:pointer;
+  text-decoration:none;
 }
 
 .btn-delete{
-  border-color:#ffbaba;
-  color:#d00;
+  border-color:#fca5a5;
+  color:#dc2626;
 }
 
 .table-footer{
@@ -254,18 +302,46 @@ tbody tr:hover{
   color:#64748b;
   display:flex;
   justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
 }
 
 .pagination{
   display:flex;
   gap:8px;
+  align-items:center;
+  flex-wrap:wrap;
 }
 
-.pagination span{
-  background:#2563eb;
+.page-btn,
+.current-page{
+  min-width:36px;
+  height:36px;
+  padding:0 10px;
+  border-radius:10px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  font-weight:700;
+  font-size:13px;
+  border:1px solid var(--line);
+}
+
+.page-btn{
+  background:#fff;
+  color:var(--text);
+}
+
+.page-btn:hover{
+  background:#f8fafc;
+}
+
+.current-page{
+  background:var(--blue);
   color:#fff;
-  padding:6px 10px;
-  border-radius:8px;
+  border-color:var(--blue);
 }
 
 @media(max-width:980px){
@@ -277,6 +353,10 @@ tbody tr:hover{
     position:relative;
     height:auto;
   }
+
+  .search-spacer{
+    display:none;
+  }
 }
 </style>
 </head>
@@ -287,14 +367,19 @@ tbody tr:hover{
 
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">🏷️</div>
-      <div><b>Inventarios</b><br><span style="font-size:12px">Categorías</span></div>
+      <div class="logo">🏠</div>
+      <div><b>Inventarios</b><br><span style="font-size:12px">Inicio</span></div>
     </div>
 
     <div class="profile">
       <div class="avatar">👤</div>
       <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
     </div>
+
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio">🏠 Inicio</a>
+    </nav>
 
     <div class="menu-title">MANTENIMIENTOS</div>
     <nav class="nav">
@@ -306,7 +391,7 @@ tbody tr:hover{
 
     <div class="menu-title">OPERACIONES</div>
     <nav class="nav">
-      <a href="/ventas/nueva">💲 Registrar venta</a>
+      <a href="/salidas">📤 Salidas</a>
       <a href="/ventas">🧾 Historial de ventas</a>
       <a href="/kardex">📒 Kardex</a>
     </nav>
@@ -320,12 +405,10 @@ tbody tr:hover{
   <div class="content">
 
     <div class="topbar">
-      <div><b>Inventario</b></div>
-      <div>Home / Productos</div>
+      <div><b>Productos</b></div>
     </div>
 
     <div class="page">
-
       <h1>Productos</h1>
 
       {% with messages = get_flashed_messages(with_categories=true) %}
@@ -339,7 +422,6 @@ tbody tr:hover{
       {% endwith %}
 
       <form method="GET" action="/productos" class="search-box">
-
         <label>BÚSQUEDA</label>
         <input type="text" name="q" value="{{ search or '' }}" placeholder="Código o código alterno">
 
@@ -351,7 +433,7 @@ tbody tr:hover{
           <option value="50" {% if per_page==50 %}selected{% endif %}>50</option>
         </select>
 
-        <button class="btn primary">Buscar</button>
+        <button class="btn primary" type="submit">Buscar</button>
         <a href="/productos" class="btn">Limpiar</a>
 
         <div class="search-spacer"></div>
@@ -359,11 +441,9 @@ tbody tr:hover{
         <a href="/productos/nuevo" class="btn primary">
           + Agregar producto
         </a>
-
       </form>
 
       <div class="card">
-
         <div class="card-header">
           <b>Lista de productos</b>
           <div>Total: {{ total }} | Página {{ page }} de {{ total_pages }}</div>
@@ -391,30 +471,44 @@ tbody tr:hover{
               <tr>
                 <td>{{ loop.index + ((page-1)*per_page) }}</td>
 
-                <td><span class="code-badge">{{ p[1] }}</span></td>
+                <td>
+                  <span class="code-badge">
+                    {{ p[1] }}
+                  </span>
+                </td>
 
                 <td>
                   {% if p[2] %}
-                    <span class="alt-badge">{{ p[2] }}</span>
+                    <span class="code-badge">{{ p[2] }}</span>
                   {% else %}
                     -
                   {% endif %}
                 </td>
 
                 <td>{{ p[3] }}</td>
-                <td>{{ p[4] }}</td>
-                <td>{{ p[5] }}</td>
-                <td><span class="stock">{{ p[6] }}</span></td>
-                <td><b>S/ {{ "%.2f"|format(p[7]) }}</b></td>
-                <td><b>$ {{ "%.2f"|format(p[8]) }}</b></td>
+                <td>{{ p[4] or 'Sin categoría' }}</td>
+                <td>{{ p[5] or '-' }}</td>
+
+                <td>
+                  <span class="stock">{{ p[6] }}</span>
+                </td>
+
+                <td>
+                  <b>S/ {{ "%.2f"|format(p[7]) }}</b>
+                </td>
+
+                <td>
+                  <b>$ {{ "%.2f"|format(p[8]) }}</b>
+                </td>
 
                 <td>
                   <div class="actions">
                     <a href="/productos/{{ p[0] }}/editar" class="btn-icon">✏️</a>
+
                     <form method="POST"
                           action="/productos/{{ p[0] }}/eliminar"
                           onsubmit="return confirm('¿Eliminar producto?');">
-                      <button class="btn-icon btn-delete">🗑</button>
+                      <button class="btn-icon btn-delete" type="submit">🗑</button>
                     </form>
                   </div>
                 </td>
@@ -425,16 +519,51 @@ tbody tr:hover{
         </div>
 
         <div class="table-footer">
-          <div>Mostrando {{ products|length }} de {{ total }} producto(s)</div>
+          <div>
+            Mostrando {{ products|length }} de {{ total }} producto(s)
+          </div>
+
           <div class="pagination">
-            <span>{{ page }}</span>
+            {% if page > 1 %}
+              <a class="page-btn" href="/productos?q={{ search or '' }}&per_page={{ per_page }}&page=1">«</a>
+              <a class="page-btn" href="/productos?q={{ search or '' }}&per_page={{ per_page }}&page={{ page - 1 }}">‹</a>
+            {% endif %}
+
+            {% if page > 2 %}
+              <a class="page-btn" href="/productos?q={{ search or '' }}&per_page={{ per_page }}&page=1">1</a>
+            {% endif %}
+
+            {% if page > 3 %}
+              <span class="dots">...</span>
+            {% endif %}
+
+            {% for pnum in range(page - 1, page + 2) %}
+              {% if pnum >= 1 and pnum <= total_pages %}
+                {% if pnum == page %}
+                  <span class="current-page">{{ pnum }}</span>
+                {% else %}
+                  <a class="page-btn" href="/productos?q={{ search or '' }}&per_page={{ per_page }}&page={{ pnum }}">{{ pnum }}</a>
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+
+            {% if page < total_pages - 2 %}
+              <span class="dots">...</span>
+            {% endif %}
+
+            {% if page < total_pages - 1 %}
+              <a class="page-btn" href="/productos?q={{ search or '' }}&per_page={{ per_page }}&page={{ total_pages }}">{{ total_pages }}</a>
+            {% endif %}
+
+            {% if page < total_pages %}
+              <a class="page-btn" href="/productos?q={{ search or '' }}&per_page={{ per_page }}&page={{ page + 1 }}">›</a>
+              <a class="page-btn" href="/productos?q={{ search or '' }}&per_page={{ per_page }}&page={{ total_pages }}">»</a>
+            {% endif %}
           </div>
         </div>
-
       </div>
 
     </div>
-
   </div>
 
 </div>

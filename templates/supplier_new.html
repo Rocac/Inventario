@@ -4,12 +4,20 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Nuevo Proveedor</title>
+<link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
 
 <style>
 :root{
-  --bg:#f3f6fb; --sidebar1:#1f66ff; --sidebar2:#31b8ff; --topbar:#1f66ff;
-  --card:#ffffff; --text:#0f172a; --muted:#64748b; --line:#e5e7eb;
-  --shadow:0 12px 28px rgba(0,0,0,.10); --radius:14px;
+  --bg:#f3f6fb;
+  --sidebar1:#c62828;
+  --sidebar2:#ef5350;
+  --topbar:#c62828;
+  --primary:#c62828;
+  --card:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#e5e7eb;
+  --shadow:0 12px 28px rgba(0,0,0,.10);
 }
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
@@ -49,14 +57,19 @@ input:focus,textarea:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3p
 
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">🏷️</div>
-      <div><b>Inventarios</b><br><span style="font-size:12px">Categorías</span></div>
+      <div class="logo">🏠</div>
+      <div><b>Inventarios</b><br><span style="font-size:12px">Inicio</span></div>
     </div>
 
     <div class="profile">
       <div class="avatar">👤</div>
       <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
     </div>
+
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio" class="active">🏠 Inicio</a>
+    </nav>
 
     <div class="menu-title">MANTENIMIENTOS</div>
     <nav class="nav">
@@ -68,7 +81,7 @@ input:focus,textarea:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3p
 
     <div class="menu-title">OPERACIONES</div>
     <nav class="nav">
-      <a href="/ventas/nueva">💲 Registrar venta</a>
+      <a href="/salidas">📤 Salidas</a>
       <a href="/ventas">🧾 Historial de ventas</a>
       <a href="/kardex">📒 Kardex</a>
     </nav>
@@ -102,10 +115,10 @@ input:focus,textarea:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3p
             <div>
                 <label>TELÉFONO</label>
                 <input name="phone"
-                    placeholder="Ej: 987654321"
-                    inputmode="numeric"
-                    pattern="^\d{9}$"
-                    maxlength="9">
+                    placeholder="Ej: +51987654321"
+                    inputmode="tel"
+                    pattern="^[\d\+\-\(\)\s]{7,20}$"
+                    maxlength="16">
             </div>
 
             <div>
