@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nueva factura PDF</title>
+  <link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
+
+  <style>
+    :root{
+      --bg:#f3f6fb;
+      --sidebar1:#c62828;
+      --sidebar2:#ef5350;
+      --topbar:#c62828;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e5e7eb;
+      --shadow:0 12px 28px rgba(0,0,0,.10);
+      --radius:16px;
+      --primary:#2563eb;
+      --ok:#16a34a;
+      --error:#dc2626;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:220px 1fr;
+      min-height:100vh;
+    }
+
+    .sidebar{
+      background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
+      color:#fff;
+      padding:14px 12px;
+      position:sticky;
+      top:0;
+      height:100vh;
+    }
+
+    .brand,.profile{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.12);
+      margin-bottom:14px;
+    }
+
+    .logo,.avatar{
+      width:38px;
+      height:38px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.18);
+    }
+
+    .menu-title{
+      margin:14px 10px 8px;
+      font-size:11px;
+      opacity:.85;
+      letter-spacing:.14em;
+    }
+
+    .nav a{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      color:#fff;
+      text-decoration:none;
+    }
+
+    .nav a:hover{background:rgba(255,255,255,.12)}
+
+    .nav a.active{
+      background:rgba(255,255,255,.18);
+      font-weight:800;
+    }
+
+    .content{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .topbar{
+      background:var(--topbar);
+      color:#fff;
+      padding:12px 18px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-shadow:0 8px 16px rgba(0,0,0,.10);
+      position:sticky;
+      top:0;
+      z-index:5;
+    }
+
+    .page{
+      padding:18px;
+    }
+
+    h1{
+      margin:6px 0 14px;
+      font-size:22px;
+    }
+
+    .flash{
+      width:100%;
+      margin-bottom:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:13px;
+    }
+
+    .flash.ok{
+      border-color:rgba(22,163,74,.25);
+      background:rgba(22,163,74,.08);
+    }
+
+    .flash.error{
+      border-color:rgba(239,68,68,.25);
+      background:rgba(239,68,68,.08);
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      max-width:1100px;
+    }
+
+    .card-header{
+      padding:12px 16px;
+      border-bottom:1px solid var(--line);
+      background:#f8fbff;
+      font-weight:800;
+    }
+
+    .card-body{
+      padding:16px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:16px 14px;
+    }
+
+    .full{
+      grid-column:1 / -1;
+    }
+
+    .label{
+      display:block;
+      font-size:12px;
+      font-weight:900;
+      color:#5b708f;
+      margin-bottom:8px;
+      letter-spacing:.06em;
+    }
+
+    input, select{
+      width:100%;
+      padding:12px 13px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      outline:none;
+      font-size:14px;
+      background:#fff;
+    }
+
+    input:focus, select:focus{
+      border-color:rgba(31,102,255,.45);
+      box-shadow:0 0 0 3px rgba(31,102,255,.12);
+    }
+
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:8px;
+    }
+
+    .status-msg{
+      margin-top:8px;
+      font-size:13px;
+      font-weight:600;
+    }
+
+    .status-loading{
+      color:#1d4ed8;
+    }
+
+    .status-ok{
+      color:var(--ok);
+    }
+
+    .status-error{
+      color:var(--error);
+    }
+
+    .actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      padding:14px 16px;
+      border-top:1px solid var(--line);
+      background:#fff;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      padding:11px 15px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      text-decoration:none;
+      font-weight:800;
+      font-size:14px;
+      cursor:pointer;
+      background:#fff;
+      color:var(--text);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+    }
+
+    .primary{
+      background:var(--primary);
+      color:#fff;
+      border:none;
+    }
+
+    .readonly-box{
+      margin-top:16px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#f8fafc;
+      padding:12px;
+    }
+
+    .readonly-box summary{
+      cursor:pointer;
+      font-weight:800;
+      color:#334155;
+      margin-bottom:10px;
+    }
+
+    textarea{
+      width:100%;
+      min-height:180px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      resize:vertical;
+      font-family:inherit;
+      font-size:13px;
+      background:#fff;
+      outline:none;
+    }
+
+    @media(max-width:980px){
+      .layout{grid-template-columns:1fr}
+      .sidebar{position:relative;height:auto}
+      .grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">📄</div>
+      <div>
+        <b>Inventarios</b><br>
+        <span style="font-size:12px">Nueva factura</span>
+      </div>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">👤</div>
+      <div>
+        <div style="font-weight:900">{{ username }}</div>
+        <small>Usuario activo</small>
+      </div>
+    </div>
+
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio">🏠 Inicio</a>
+    </nav>
+
+    <div class="menu-title">MANTENIMIENTOS</div>
+    <nav class="nav">
+      <a href="/categorias">🏷️ Categorías</a>
+      <a href="/productos">📦 Productos</a>
+      <a href="/proveedores">🏭 Proveedores</a>
+      <a href="/clientes">🧑 Clientes</a>
+    </nav>
+
+    <div class="menu-title">OPERACIONES</div>
+    <nav class="nav">
+      <a href="/salidas">📤 Salidas</a>
+      <a href="/ventas">🧾 Historial de ventas</a>
+      <a href="/kardex">📒 Kardex</a>
+      <a href="/facturas" class="active">📄 Facturas PDF</a>
+    </nav>
+
+    <div class="menu-title">SESIÓN</div>
+    <nav class="nav">
+      <a href="{{ url_for('logout') }}">🚪 Salir</a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div style="font-weight:900">Nueva factura PDF</div>
+      <div>Home / Facturas / Nueva</div>
+    </div>
+
+    <div class="page">
+      <h1>Registrar factura desde PDF</h1>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" enctype="multipart/form-data" class="card" id="invoiceForm">
+        <div class="card-header">Datos de la factura</div>
+
+        <div class="card-body">
+          <div class="grid">
+            <div class="full">
+              <label class="label">ARCHIVO PDF *</label>
+              <input type="file" name="pdf_file" id="pdf_file" accept=".pdf" required>
+              <div class="hint">Sube el PDF de la factura que quieres registrar.</div>
+              <div id="pdf_status" class="status-msg"></div>
+            </div>
+
+            <div>
+              <label class="label">PROVEEDOR REGISTRADO</label>
+              <select name="supplier_id" id="supplier_id">
+                <option value="">-- Seleccionar proveedor --</option>
+                {% for s in suppliers %}
+                  <option value="{{ s[0] }}">
+                    {{ s[1] }}{% if s[6] %} - {{ s[6] }}{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div>
+              <label class="label">TIPO DE DOCUMENTO</label>
+              <select name="invoice_type" id="invoice_type">
+                <option value="">-- Seleccionar --</option>
+                <option value="FACTURA">FACTURA</option>
+                <option value="BOLETA">BOLETA</option>
+                <option value="RECIBO">RECIBO</option>
+                <option value="NOTA_CREDITO">NOTA DE CRÉDITO</option>
+                <option value="NOTA_DEBITO">NOTA DE DÉBITO</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="label">NOMBRE DEL PROVEEDOR</label>
+              <input type="text" name="supplier_name" id="supplier_name" placeholder="Ej: Importaciones Lima SAC">
+            </div>
+
+            <div>
+              <label class="label">RUC DEL PROVEEDOR</label>
+              <input type="text" name="supplier_ruc" id="supplier_ruc" placeholder="Ej: 20123456789">
+            </div>
+
+            <div>
+              <label class="label">SERIE</label>
+              <input type="text" name="invoice_series" id="invoice_series" placeholder="Ej: F001">
+            </div>
+
+            <div>
+              <label class="label">NÚMERO</label>
+              <input type="text" name="invoice_number" id="invoice_number" placeholder="Ej: 00012345">
+            </div>
+
+            <div>
+              <label class="label">FECHA DE EMISIÓN</label>
+              <input type="date" name="issue_date" id="issue_date">
+            </div>
+
+            <div>
+              <label class="label">FECHA DE VENCIMIENTO</label>
+              <input type="date" name="due_date" id="due_date">
+            </div>
+
+            <div>
+              <label class="label">MONEDA</label>
+              <select name="currency" id="currency">
+                <option value="PEN">PEN</option>
+                <option value="USD">USD</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="label">SUBTOTAL</label>
+              <input type="number" step="0.01" name="subtotal" id="subtotal" value="0">
+            </div>
+
+            <div>
+              <label class="label">IGV / IMPUESTO</label>
+              <input type="number" step="0.01" name="tax" id="tax" value="0">
+            </div>
+
+            <div>
+              <label class="label">TOTAL</label>
+              <input type="number" step="0.01" name="total" id="total" value="0">
+            </div>
+          </div>
+
+          <details class="readonly-box">
+            <summary>Ver texto extraído del PDF</summary>
+            <textarea id="raw_text_preview" readonly placeholder="Aquí aparecerá el texto detectado del PDF..."></textarea>
+          </details>
+        </div>
+
+        <div class="actions">
+          <a href="/facturas" class="btn">Cancelar</a>
+          <button type="submit" class="btn primary">Guardar factura</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  const pdfInput = document.getElementById("pdf_file");
+  const pdfStatus = document.getElementById("pdf_status");
+
+  const supplierId = document.getElementById("supplier_id");
+  const supplierName = document.getElementById("supplier_name");
+  const supplierRuc = document.getElementById("supplier_ruc");
+  const invoiceType = document.getElementById("invoice_type");
+  const invoiceSeries = document.getElementById("invoice_series");
+  const invoiceNumber = document.getElementById("invoice_number");
+  const issueDate = document.getElementById("issue_date");
+  const dueDate = document.getElementById("due_date");
+  const currency = document.getElementById("currency");
+  const subtotal = document.getElementById("subtotal");
+  const tax = document.getElementById("tax");
+  const total = document.getElementById("total");
+  const rawTextPreview = document.getElementById("raw_text_preview");
+
+  function setStatus(message, type = "") {
+    pdfStatus.textContent = message;
+    pdfStatus.className = "status-msg";
+    if (type) {
+      pdfStatus.classList.add(type);
+    }
+  }
+
+  function convertDateToISO(dateStr) {
+    if (!dateStr) return "";
+    const match = dateStr.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (match) {
+      const dd = match[1].padStart(2, "0");
+      const mm = match[2].padStart(2, "0");
+      const yyyy = match[3];
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    return dateStr;
+  }
+
+  function fillIfEmptyOrZero(field, value) {
+    if (value === undefined || value === null || value === "") return;
+
+    const currentValue = (field.value || "").trim();
+
+    if (
+      currentValue === "" ||
+      currentValue === "0" ||
+      currentValue === "0.0" ||
+      currentValue === "0.00"
+    ) {
+      field.value = value;
+    }
+  }
+
+  pdfInput.addEventListener("change", async function () {
+    const file = this.files[0];
+    if (!file) return;
+
+    setStatus("Leyendo PDF y extrayendo datos...", "status-loading");
+    rawTextPreview.value = "";
+
+    const formData = new FormData();
+    formData.append("pdf_file", file);
+
+    try {
+      const response = await fetch("/facturas/leer_pdf", {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (!result.ok) {
+        setStatus(result.message || "No se pudo leer el PDF.", "status-error");
+        return;
+      }
+
+      const data = result.data || {};
+
+      if (data.supplier_name && !supplierName.value.trim()) supplierName.value = data.supplier_name;
+      if (data.supplier_ruc && !supplierRuc.value.trim()) supplierRuc.value = data.supplier_ruc;
+      if (data.invoice_type && !invoiceType.value) invoiceType.value = data.invoice_type;
+      if (data.invoice_series && !invoiceSeries.value.trim()) invoiceSeries.value = data.invoice_series;
+      if (data.invoice_number && !invoiceNumber.value.trim()) invoiceNumber.value = data.invoice_number;
+      if (data.issue_date && !issueDate.value) issueDate.value = convertDateToISO(data.issue_date);
+      if (data.due_date && !dueDate.value) dueDate.value = convertDateToISO(data.due_date);
+      if (data.currency && (!currency.value || currency.value === "PEN")) currency.value = data.currency;
+
+      fillIfEmptyOrZero(subtotal, data.subtotal);
+      fillIfEmptyOrZero(tax, data.tax);
+      fillIfEmptyOrZero(total, data.total);
+
+      if (result.raw_text) {
+        rawTextPreview.value = result.raw_text;
+      }
+
+      setStatus("PDF leído correctamente. Los campos fueron rellenados automáticamente.", "status-ok");
+    } catch (error) {
+      console.error(error);
+      setStatus("Ocurrió un error al procesar el PDF.", "status-error");
+    }
+  });
+</script>
+
+</body>
+</html>

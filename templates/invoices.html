@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facturas</title>
+  <link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
+
+  <style>
+    :root{
+      --bg:#f3f6fb;
+      --sidebar1:#c62828;
+      --sidebar2:#ef5350;
+      --topbar:#c62828;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e5e7eb;
+      --shadow:0 12px 28px rgba(0,0,0,.10);
+      --radius:14px;
+      --blue:#2563eb;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:220px 1fr;
+      min-height:100vh;
+    }
+
+    .sidebar{
+      background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
+      color:#fff;
+      padding:14px 12px;
+      position:sticky;
+      top:0;
+      height:100vh;
+    }
+
+    .brand,.profile{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.12);
+      margin-bottom:14px;
+    }
+
+    .logo,.avatar{
+      width:38px;
+      height:38px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.18);
+    }
+
+    .menu-title{
+      margin:14px 10px 8px;
+      font-size:11px;
+      opacity:.85;
+      letter-spacing:.14em;
+    }
+
+    .nav a{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      color:#fff;
+      text-decoration:none;
+    }
+
+    .nav a:hover{background:rgba(255,255,255,.12)}
+
+    .nav a.active{
+      background:rgba(255,255,255,.18);
+      font-weight:800;
+    }
+
+    .content{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .topbar{
+      background:var(--topbar);
+      color:#fff;
+      padding:12px 18px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-shadow:0 8px 16px rgba(0,0,0,.10);
+      position:sticky;
+      top:0;
+      z-index:5;
+    }
+
+    .page{
+      padding:18px;
+    }
+
+    h1{
+      margin:6px 0 14px;
+      font-size:22px;
+    }
+
+    .flash{
+      width:100%;
+      margin-bottom:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:13px;
+    }
+
+    .flash.ok{
+      border-color:rgba(22,163,74,.25);
+      background:rgba(22,163,74,.08);
+    }
+
+    .flash.error{
+      border-color:rgba(239,68,68,.25);
+      background:rgba(239,68,68,.08);
+    }
+
+    .filters{
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:14px;
+      box-shadow:var(--shadow);
+      margin-bottom:14px;
+    }
+
+    .filters-grid{
+      display:grid;
+      grid-template-columns:repeat(6, minmax(0,1fr));
+      gap:12px;
+      align-items:end;
+    }
+
+    .label{
+      display:block;
+      font-size:12px;
+      font-weight:800;
+      color:#5b708f;
+      margin-bottom:6px;
+      letter-spacing:.05em;
+    }
+
+    input, select{
+      width:100%;
+      padding:11px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      font-size:14px;
+      outline:none;
+      background:#fff;
+    }
+
+    input:focus, select:focus{
+      border-color:rgba(37,99,235,.45);
+      box-shadow:0 0 0 3px rgba(37,99,235,.12);
+    }
+
+    .filter-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      text-decoration:none;
+      font-weight:700;
+      font-size:13px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      background:#fff;
+      color:var(--text);
+    }
+
+    .primary{
+      background:var(--blue);
+      color:#fff;
+      border:none;
+    }
+
+    .danger{
+      border-color:#fca5a5;
+      color:#b91c1c;
+      background:#fff;
+    }
+
+    .card{
+      background:#fff;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      border:1px solid var(--line);
+      overflow:hidden;
+    }
+
+    .card-header{
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      background:#fff;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .table-wrap{
+      overflow-x:auto;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1200px;
+    }
+
+    thead th{
+      background:#f1f5f9;
+      padding:12px;
+      font-size:12px;
+      text-transform:uppercase;
+      text-align:center;
+      color:#64748b;
+      border-bottom:1px solid var(--line);
+    }
+
+    tbody td{
+      padding:12px;
+      border-bottom:1px solid var(--line);
+      text-align:center;
+      font-size:14px;
+      vertical-align:middle;
+    }
+
+    tbody tr:hover{
+      background:#fafcff;
+    }
+
+    .badge{
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      border:1px solid #c7d2fe;
+      background:#eef2ff;
+      color:#1d4ed8;
+    }
+
+    .status{
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .status-ok{
+      background:#ecfdf3;
+      color:#166534;
+      border:1px solid #bbf7d0;
+    }
+
+    .status-pending{
+      background:#fff7ed;
+      color:#b45309;
+      border:1px solid #fed7aa;
+    }
+
+    .status-error{
+      background:#fef2f2;
+      color:#b91c1c;
+      border:1px solid #fecaca;
+    }
+
+    .table-actions{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+
+    .empty{
+      text-align:center;
+      padding:22px;
+      color:var(--muted);
+    }
+
+    @media(max-width:1200px){
+      .filters-grid{
+        grid-template-columns:repeat(3, minmax(0,1fr));
+      }
+    }
+
+    @media(max-width:980px){
+      .layout{grid-template-columns:1fr}
+      .sidebar{position:relative;height:auto}
+      .filters-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">📄</div>
+      <div>
+        <b>Inventarios</b><br>
+        <span style="font-size:12px">Facturas</span>
+      </div>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">👤</div>
+      <div>
+        <div style="font-weight:900">{{ username }}</div>
+        <small>Usuario activo</small>
+      </div>
+    </div>
+
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio">🏠 Inicio</a>
+    </nav>
+
+    <div class="menu-title">MANTENIMIENTOS</div>
+    <nav class="nav">
+      <a href="/categorias">🏷️ Categorías</a>
+      <a href="/productos">📦 Productos</a>
+      <a href="/proveedores">🏭 Proveedores</a>
+      <a href="/clientes">🧑 Clientes</a>
+    </nav>
+
+    <div class="menu-title">OPERACIONES</div>
+    <nav class="nav">
+      <a href="/salidas">📤 Salidas</a>
+      <a href="/ventas">🧾 Historial de ventas</a>
+      <a href="/kardex">📒 Kardex</a>
+      <a href="/facturas" class="active">📄 Facturas PDF</a>
+    </nav>
+
+    <div class="menu-title">SESIÓN</div>
+    <nav class="nav">
+      <a href="{{ url_for('logout') }}">🚪 Salir</a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div style="font-weight:900">Facturas PDF</div>
+      <div>Home / Facturas</div>
+    </div>
+
+    <div class="page">
+      <h1>Facturas registradas</h1>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="GET" action="/facturas" class="filters">
+        <div class="filters-grid">
+          <div>
+            <label class="label">BÚSQUEDA GENERAL</label>
+            <input type="text" name="q" value="{{ q }}" placeholder="Proveedor, número, texto...">
+          </div>
+
+          <div>
+            <label class="label">RUC</label>
+            <input type="text" name="ruc" value="{{ ruc }}" placeholder="Ej: 20123456789">
+          </div>
+
+          <div>
+            <label class="label">FECHA DESDE</label>
+            <input type="date" name="date_from" value="{{ date_from }}">
+          </div>
+
+          <div>
+            <label class="label">FECHA HASTA</label>
+            <input type="date" name="date_to" value="{{ date_to }}">
+          </div>
+
+          <div>
+            <label class="label">TOTAL MÍNIMO</label>
+            <input type="number" step="0.01" name="total_min" value="{{ total_min }}" placeholder="0.00">
+          </div>
+
+          <div>
+            <label class="label">TOTAL MÁXIMO</label>
+            <input type="number" step="0.01" name="total_max" value="{{ total_max }}" placeholder="0.00">
+          </div>
+        </div>
+
+        <div class="filter-actions" style="margin-top:12px;">
+          <button type="submit" class="btn primary">Buscar</button>
+          <a href="/facturas" class="btn">Limpiar</a>
+        </div>
+      </form>
+
+      <div class="card">
+        <div class="card-header">
+          <b>Lista de facturas</b>
+          <a href="/facturas/nueva" class="btn primary">+ Nueva factura PDF</a>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Proveedor</th>
+                <th>RUC</th>
+                <th>Tipo</th>
+                <th>Número</th>
+                <th>Fecha</th>
+                <th>Moneda</th>
+                <th>Total</th>
+                <th>Archivo</th>
+                <th>Estado</th>
+                <th>Opciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if invoices and invoices|length > 0 %}
+                {% for inv in invoices %}
+                <tr>
+                  <td><span class="badge">#{{ loop.index }}</span></td>
+                  <td>{{ inv[1] or '-' }}</td>
+                  <td>{{ inv[2] or '-' }}</td>
+                  <td>{{ inv[3] or '-' }}</td>
+                  <td>{{ inv[4] or '-' }}</td>
+                  <td>{{ inv[5] or '-' }}</td>
+                  <td>{{ inv[6] or '-' }}</td>
+                  <td><b>{{ inv[6] or 'PEN' }} {{ '%.2f'|format(inv[7] or 0) }}</b></td>
+                  <td>{{ inv[8] or '-' }}</td>
+                  <td>
+                    {% if inv[9] == 'PROCESADO' %}
+                      <span class="status status-ok">{{ inv[9] }}</span>
+                    {% elif inv[9] == 'ERROR' %}
+                      <span class="status status-error">{{ inv[9] }}</span>
+                    {% else %}
+                      <span class="status status-pending">{{ inv[9] }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <a href="/facturas/{{ inv[0] }}" class="btn">Ver detalle</a>
+                      <a href="/facturas/{{ inv[0] }}/editar" class="btn">Editar</a>
+
+                      <form method="POST"
+                            action="/facturas/{{ inv[0] }}/eliminar"
+                            onsubmit="return confirm('¿Eliminar esta factura?');"
+                            style="display:inline;">
+                        <button type="submit" class="btn danger">Eliminar</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="11" class="empty">No hay facturas registradas.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

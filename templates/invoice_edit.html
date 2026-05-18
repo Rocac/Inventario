@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editar factura</title>
+  <link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
+
+  <style>
+    :root{
+      --bg:#f3f6fb; --sidebar1:#c62828; --sidebar2:#ef5350; --topbar:#c62828;
+      --card:#ffffff; --text:#0f172a; --muted:#64748b; --line:#e5e7eb;
+      --shadow:0 12px 28px rgba(0,0,0,.10); --radius:16px; --primary:#2563eb;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .layout{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+    .sidebar{background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));color:#fff;padding:14px 12px;position:sticky;top:0;height:100vh}
+    .brand,.profile{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.12);margin-bottom:14px}
+    .logo,.avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.18)}
+    .menu-title{margin:14px 10px 8px;font-size:11px;opacity:.85;letter-spacing:.14em}
+    .nav a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;color:#fff;text-decoration:none}
+    .nav a:hover{background:rgba(255,255,255,.12)}
+    .nav a.active{background:rgba(255,255,255,.18);font-weight:800}
+    .content{min-width:0;display:flex;flex-direction:column}
+    .topbar{background:var(--topbar);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 8px 16px rgba(0,0,0,.10);position:sticky;top:0;z-index:5}
+    .page{padding:18px}
+    h1{margin:6px 0 14px;font-size:22px}
+    .flash{width:100%;margin-bottom:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:13px}
+    .flash.ok{border-color:rgba(22,163,74,.25);background:rgba(22,163,74,.08)}
+    .flash.error{border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.08)}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;max-width:1100px}
+    .card-header{padding:12px 16px;border-bottom:1px solid var(--line);background:#f8fbff;font-weight:800}
+    .card-body{padding:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px 14px}
+    .label{display:block;font-size:12px;font-weight:900;color:#5b708f;margin-bottom:8px;letter-spacing:.06em}
+    input, select{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:14px;outline:none;font-size:14px;background:#fff}
+    input:focus, select:focus{border-color:rgba(31,102,255,.45);box-shadow:0 0 0 3px rgba(31,102,255,.12)}
+    .actions{display:flex;justify-content:flex-end;gap:10px;padding:14px 16px;border-top:1px solid var(--line);background:#fff;flex-wrap:wrap}
+    .btn{padding:11px 15px;border-radius:12px;border:1px solid var(--line);text-decoration:none;font-weight:800;font-size:14px;cursor:pointer;background:#fff;color:var(--text);display:inline-flex;align-items:center;justify-content:center;gap:8px}
+    .primary{background:var(--primary);color:#fff;border:none}
+    @media(max-width:980px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">📄</div>
+      <div>
+        <b>Inventarios</b><br>
+        <span style="font-size:12px">Nueva factura</span>
+      </div>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">👤</div>
+      <div>
+        <div style="font-weight:900">{{ username }}</div>
+        <small>Usuario activo</small>
+      </div>
+    </div>
+
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio">🏠 Inicio</a>
+    </nav>
+
+    <div class="menu-title">MANTENIMIENTOS</div>
+    <nav class="nav">
+      <a href="/categorias">🏷️ Categorías</a>
+      <a href="/productos">📦 Productos</a>
+      <a href="/proveedores">🏭 Proveedores</a>
+      <a href="/clientes">🧑 Clientes</a>
+    </nav>
+
+    <div class="menu-title">OPERACIONES</div>
+    <nav class="nav">
+      <a href="/salidas">📤 Salidas</a>
+      <a href="/ventas">🧾 Historial de ventas</a>
+      <a href="/kardex">📒 Kardex</a>
+      <a href="/facturas" class="active">📄 Facturas PDF</a>
+    </nav>
+
+    <div class="menu-title">SESIÓN</div>
+    <nav class="nav">
+      <a href="{{ url_for('logout') }}">🚪 Salir</a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div style="font-weight:900">Editar factura</div>
+      <div>Home / Facturas / Editar</div>
+    </div>
+
+    <div class="page">
+      <h1>Editar factura #{{ invoice[0] }}</h1>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" class="card">
+        <div class="card-header">Datos de la factura</div>
+
+        <div class="card-body">
+          <div class="grid">
+            <div>
+              <label class="label">PROVEEDOR REGISTRADO</label>
+              <select name="supplier_id">
+                <option value="">-- Seleccionar proveedor --</option>
+                {% for s in suppliers %}
+                  <option value="{{ s[0] }}" {% if invoice[2] == s[0] %}selected{% endif %}>
+                    {{ s[1] }}{% if s[6] %} - {{ s[6] }}{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div>
+              <label class="label">TIPO DE DOCUMENTO</label>
+              <select name="invoice_type">
+                <option value="">-- Seleccionar --</option>
+                <option value="FACTURA" {% if invoice[5] == 'FACTURA' %}selected{% endif %}>FACTURA</option>
+                <option value="BOLETA" {% if invoice[5] == 'BOLETA' %}selected{% endif %}>BOLETA</option>
+                <option value="RECIBO" {% if invoice[5] == 'RECIBO' %}selected{% endif %}>RECIBO</option>
+                <option value="NOTA_CREDITO" {% if invoice[5] == 'NOTA_CREDITO' %}selected{% endif %}>NOTA DE CRÉDITO</option>
+                <option value="NOTA_DEBITO" {% if invoice[5] == 'NOTA_DEBITO' %}selected{% endif %}>NOTA DE DÉBITO</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="label">NOMBRE DEL PROVEEDOR</label>
+              <input type="text" name="supplier_name" value="{{ invoice[3] or '' }}">
+            </div>
+
+            <div>
+              <label class="label">RUC DEL PROVEEDOR</label>
+              <input type="text" name="supplier_ruc" value="{{ invoice[4] or '' }}">
+            </div>
+
+            <div>
+              <label class="label">SERIE</label>
+              <input type="text" name="invoice_series" value="{{ invoice[6] or '' }}">
+            </div>
+
+            <div>
+              <label class="label">NÚMERO</label>
+              <input type="text" name="invoice_number" value="{{ invoice[7] or '' }}">
+            </div>
+
+            <div>
+              <label class="label">FECHA DE EMISIÓN</label>
+              <input type="date" name="issue_date" value="{{ invoice[9] if invoice[9] else '' }}">
+            </div>
+
+            <div>
+              <label class="label">FECHA DE VENCIMIENTO</label>
+              <input type="date" name="due_date" value="{{ invoice[10] if invoice[10] else '' }}">
+            </div>
+
+            <div>
+              <label class="label">MONEDA</label>
+              <select name="currency">
+                <option value="PEN" {% if invoice[11] == 'PEN' %}selected{% endif %}>PEN</option>
+                <option value="USD" {% if invoice[11] == 'USD' %}selected{% endif %}>USD</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="label">SUBTOTAL</label>
+              <input type="number" step="0.01" name="subtotal" value="{{ invoice[12] or 0 }}">
+            </div>
+
+            <div>
+              <label class="label">IGV / IMPUESTO</label>
+              <input type="number" step="0.01" name="tax" value="{{ invoice[13] or 0 }}">
+            </div>
+
+            <div>
+              <label class="label">TOTAL</label>
+              <input type="number" step="0.01" name="total" value="{{ invoice[14] or 0 }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <a href="/facturas/{{ invoice[0] }}" class="btn">Cancelar</a>
+          <button type="submit" class="btn primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+</body>
+</html>

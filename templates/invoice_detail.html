@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle de factura</title>
+  <link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
+
+  <style>
+    :root{
+      --bg:#f3f6fb;
+      --sidebar1:#c62828;
+      --sidebar2:#ef5350;
+      --topbar:#c62828;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e5e7eb;
+      --shadow:0 12px 28px rgba(0,0,0,.10);
+      --radius:14px;
+      --blue:#2563eb;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+
+    .layout{
+      display:grid;
+      grid-template-columns:220px 1fr;
+      min-height:100vh;
+    }
+
+    .sidebar{
+      background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
+      color:#fff;
+      padding:14px 12px;
+      position:sticky;
+      top:0;
+      height:100vh;
+    }
+
+    .brand,.profile{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.12);
+      margin-bottom:14px;
+    }
+
+    .logo,.avatar{
+      width:38px;
+      height:38px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.18);
+    }
+
+    .menu-title{
+      margin:14px 10px 8px;
+      font-size:11px;
+      opacity:.85;
+      letter-spacing:.14em;
+    }
+
+    .nav a{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      color:#fff;
+      text-decoration:none;
+    }
+
+    .nav a:hover{background:rgba(255,255,255,.12)}
+
+    .nav a.active{
+      background:rgba(255,255,255,.18);
+      font-weight:800;
+    }
+
+    .content{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .topbar{
+      background:var(--topbar);
+      color:#fff;
+      padding:12px 18px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-shadow:0 8px 16px rgba(0,0,0,.10);
+      position:sticky;
+      top:0;
+      z-index:5;
+    }
+
+    .page{
+      padding:18px;
+    }
+
+    h1{
+      margin:6px 0 14px;
+      font-size:22px;
+    }
+
+    .flash{
+      width:100%;
+      margin-bottom:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:13px;
+    }
+
+    .flash.ok{
+      border-color:rgba(22,163,74,.25);
+      background:rgba(22,163,74,.08);
+    }
+
+    .flash.error{
+      border-color:rgba(239,68,68,.25);
+      background:rgba(239,68,68,.08);
+    }
+
+    .card{
+      background:#fff;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      border:1px solid var(--line);
+      overflow:hidden;
+      margin-bottom:14px;
+    }
+
+    .card-header{
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      background:#f8fbff;
+      font-weight:800;
+    }
+
+    .card-body{
+      padding:14px;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:14px;
+    }
+
+    .box{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px 14px;
+      background:#fff;
+    }
+
+    .box small{
+      display:block;
+      font-size:11px;
+      font-weight:800;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      margin-bottom:6px;
+    }
+
+    .box strong{
+      font-size:15px;
+    }
+
+    .full{
+      grid-column:1 / -1;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-bottom:14px;
+    }
+
+    .btn{
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      text-decoration:none;
+      font-weight:700;
+      font-size:13px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      background:#fff;
+      color:var(--text);
+    }
+
+    .primary{
+      background:var(--blue);
+      color:#fff;
+      border:none;
+    }
+
+    .danger{
+      border-color:#fca5a5;
+      color:#b91c1c;
+      background:#fff;
+    }
+
+    .table-wrap{
+      overflow-x:auto;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:850px;
+    }
+
+    thead th{
+      background:#f1f5f9;
+      color:#64748b;
+      font-size:12px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      text-align:center;
+      padding:12px;
+      border-bottom:1px solid var(--line);
+    }
+
+    tbody td{
+      padding:12px;
+      border-bottom:1px solid var(--line);
+      text-align:center;
+      font-size:14px;
+    }
+
+    .text-left{
+      text-align:left;
+    }
+
+    textarea{
+      width:100%;
+      min-height:180px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      resize:vertical;
+      font-family:inherit;
+      font-size:13px;
+      background:#fff;
+    }
+
+    input{
+      width:100%;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      font-size:14px;
+      outline:none;
+    }
+
+    input:focus, textarea:focus{
+      border-color:rgba(37,99,235,.45);
+      box-shadow:0 0 0 3px rgba(37,99,235,.12);
+    }
+
+    .form-grid{
+      display:grid;
+      grid-template-columns:2fr .7fr .8fr .8fr .8fr;
+      gap:10px;
+      align-items:end;
+    }
+
+    .label{
+      display:block;
+      font-size:12px;
+      font-weight:800;
+      color:#5b708f;
+      margin-bottom:6px;
+      letter-spacing:.05em;
+    }
+
+    @media(max-width:980px){
+      .layout{grid-template-columns:1fr}
+      .sidebar{position:relative;height:auto}
+      .grid{grid-template-columns:1fr}
+      .form-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">📄</div>
+      <div>
+        <b>Inventarios</b><br>
+        <span style="font-size:12px">Detalle factura</span>
+      </div>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">👤</div>
+      <div>
+        <div style="font-weight:900">{{ username }}</div>
+        <small>Usuario activo</small>
+      </div>
+    </div>
+
+    <div class="menu-title">INICIO</div>
+    <nav class="nav">
+      <a href="/inicio">🏠 Inicio</a>
+    </nav>
+
+    <div class="menu-title">MANTENIMIENTOS</div>
+    <nav class="nav">
+      <a href="/categorias">🏷️ Categorías</a>
+      <a href="/productos">📦 Productos</a>
+      <a href="/proveedores">🏭 Proveedores</a>
+      <a href="/clientes">🧑 Clientes</a>
+    </nav>
+
+    <div class="menu-title">OPERACIONES</div>
+    <nav class="nav">
+      <a href="/salidas">📤 Salidas</a>
+      <a href="/ventas">🧾 Historial de ventas</a>
+      <a href="/kardex">📒 Kardex</a>
+      <a href="/facturas" class="active">📄 Facturas PDF</a>
+    </nav>
+
+    <div class="menu-title">SESIÓN</div>
+    <nav class="nav">
+      <a href="{{ url_for('logout') }}">🚪 Salir</a>
+    </nav>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div style="font-weight:900">Detalle de factura</div>
+      <div>Home / Facturas / Detalle</div>
+    </div>
+
+    <div class="page">
+      <h1>Factura #{{ invoice[0] }}</h1>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <div class="actions">
+        <a href="/facturas" class="btn">← Volver</a>
+        <a href="/facturas/{{ invoice[0] }}/editar" class="btn">Editar</a>
+
+        <form method="POST"
+              action="/facturas/{{ invoice[0] }}/eliminar"
+              onsubmit="return confirm('¿Eliminar esta factura?');"
+              style="display:inline;">
+          <button type="submit" class="btn danger">Eliminar</button>
+        </form>
+
+        {% if invoice[20] %}
+          <a href="/{{ invoice[20].replace('\\', '/') }}" target="_blank" class="btn primary">Abrir PDF</a>
+        {% endif %}
+      </div>
+
+      <div class="card">
+        <div class="card-header">Datos principales</div>
+        <div class="card-body">
+          <div class="grid">
+            <div class="box">
+              <small>Proveedor</small>
+              <strong>{{ invoice[3] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>RUC</small>
+              <strong>{{ invoice[4] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Tipo</small>
+              <strong>{{ invoice[5] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Serie</small>
+              <strong>{{ invoice[6] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Número</small>
+              <strong>{{ invoice[7] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Número completo</small>
+              <strong>{{ invoice[8] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Fecha de emisión</small>
+              <strong>{{ invoice[9] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Fecha de vencimiento</small>
+              <strong>{{ invoice[10] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Moneda</small>
+              <strong>{{ invoice[11] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Subtotal</small>
+              <strong>{{ invoice[11] or 'PEN' }} {{ '%.2f'|format(invoice[12] or 0) }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Impuesto</small>
+              <strong>{{ invoice[11] or 'PEN' }} {{ '%.2f'|format(invoice[13] or 0) }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Total</small>
+              <strong>{{ invoice[11] or 'PEN' }} {{ '%.2f'|format(invoice[14] or 0) }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Archivo</small>
+              <strong>{{ invoice[18] or '-' }}</strong>
+            </div>
+
+            <div class="box">
+              <small>Estado archivo</small>
+              <strong>{{ invoice[21] or '-' }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

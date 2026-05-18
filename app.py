@@ -6,6 +6,8 @@ import re
 import json
 from decimal import Decimal, ROUND_HALF_UP
 from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
+import fitz  # PyMuPDF
 
 load_dotenv()
 
@@ -20,6 +22,12 @@ DB_NAME = os.getenv("DB_NAME")
 
 CONN_STR = f"postgresql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
+INVOICE_UPLOAD_FOLDER = os.path.join("static", "invoices")
+ALLOWED_PDF_EXTENSIONS = {"pdf"}
+
+app.config["INVOICE_UPLOAD_FOLDER"] = INVOICE_UPLOAD_FOLDER
+os.makedirs(INVOICE_UPLOAD_FOLDER, exist_ok=True)
+
 
 def get_conn():
     return psycopg.connect(CONN_STR)
@@ -30,10 +38,6 @@ def login_required() -> bool:
 
 
 PHONE_RE = re.compile(r"^[\d\+\-\(\)\s]{7,20}$")
-def validate_phone(phone: str) -> bool:
-    if not phone:
-        return True
-    return bool(PHONE_RE.match(phone))
 EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]{2,}$")
 DNI_RE = re.compile(r"^\d{8}$")
 RUC_RE = re.compile(r"^\d{11}$")
@@ -65,6 +69,178 @@ def validate_ruc(ruc: str) -> bool:
 
 def money(x):
     return Decimal(str(x)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+# =========================
+# HELPERS FACTURAS PDF
+# =========================
+
+def allowed_pdf_file(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_PDF_EXTENSIONS
+
+
+def unique_invoice_filename(original_name: str) -> str:
+    base, ext = os.path.splitext(original_name)
+    candidate = original_name
+    i = 1
+    while os.path.exists(os.path.join(app.config["INVOICE_UPLOAD_FOLDER"], candidate)):
+        candidate = f"{base}_{i}{ext}"
+        i += 1
+    return candidate
+
+
+def extract_text_from_pdf(pdf_path: str) -> str:
+    text_parts = []
+    try:
+        doc = fitz.open(pdf_path)
+        for page in doc:
+            text_parts.append(page.get_text("text"))
+        doc.close()
+    except Exception:
+        return ""
+    return "\n".join(text_parts).strip()
+
+
+def clean_text_for_parse(text: str) -> str:
+    if not text:
+        return ""
+    text = text.replace("\r", "\n")
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n{2,}", "\n", text)
+    return text.strip()
+
+
+def parse_decimal_text(value: str):
+    if not value:
+        return 0.0
+
+    value = value.strip()
+    value = value.replace("S/", "").replace("$", "").replace("US$", "")
+    value = value.replace(" ", "")
+
+    if "," in value and "." in value:
+        if value.rfind(",") > value.rfind("."):
+            value = value.replace(".", "").replace(",", ".")
+        else:
+            value = value.replace(",", "")
+    elif "," in value:
+        value = value.replace(",", ".")
+
+    try:
+        return float(value)
+    except Exception:
+        return 0.0
+
+
+def normalize_date_for_db(date_str: str) -> str | None:
+    if not date_str:
+        return None
+    date_str = date_str.strip()
+    if not date_str:
+        return None
+
+    # Ya viene ISO
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_str):
+        return date_str
+
+    # dd/mm/yyyy o dd-mm-yyyy -> yyyy-mm-dd
+    m = re.fullmatch(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})", date_str)
+    if m:
+        d, mo, y = m.groups()
+        return f"{y}-{int(mo):02d}-{int(d):02d}"
+
+    return None
+
+
+def auto_extract_invoice_data(raw_text: str):
+    text = clean_text_for_parse(raw_text)
+    upper_text = text.upper()
+
+    result = {
+        "supplier_name": "",
+        "supplier_ruc": "",
+        "invoice_type": "",
+        "invoice_series": "",
+        "invoice_number": "",
+        "full_number": "",
+        "issue_date": "",
+        "due_date": "",
+        "currency": "PEN",
+        "subtotal": 0.0,
+        "tax": 0.0,
+        "total": 0.0,
+        "customer_name": "",
+        "customer_ruc": ""
+    }
+
+    if "FACTURA ELECTRONICA" in upper_text or "FACTURA ELECTRÓNICA" in upper_text or "FACTURA" in upper_text:
+        result["invoice_type"] = "FACTURA"
+    elif "BOLETA" in upper_text:
+        result["invoice_type"] = "BOLETA"
+    elif "RECIBO" in upper_text:
+        result["invoice_type"] = "RECIBO"
+
+    if "US$" in upper_text or "USD" in upper_text or "DÓLAR" in upper_text or "DOLAR" in upper_text:
+        result["currency"] = "USD"
+    else:
+        result["currency"] = "PEN"
+
+    supplier_ruc_match = re.search(r"RUC[:\s]*(\d{11})", upper_text)
+    if supplier_ruc_match:
+        result["supplier_ruc"] = supplier_ruc_match.group(1)
+
+    full_number_match = re.search(r"\b([A-Z]\d{3})[-\s]?(\d+)\b", upper_text)
+    if full_number_match:
+        result["invoice_series"] = full_number_match.group(1)
+        result["invoice_number"] = full_number_match.group(2)
+        result["full_number"] = f"{full_number_match.group(1)}-{full_number_match.group(2)}"
+
+    date_match = re.search(
+        r"(?:FECHA\s+DE\s+EMISI[ÓO]N|FECHA|EMISI[ÓO]N)\s*:?\s*([0-3]?\d[\/\-][0-1]?\d[\/\-]\d{2,4})",
+        upper_text
+    )
+    if date_match:
+        result["issue_date"] = date_match.group(1)
+
+    customer_name_match = re.search(r"SEÑOR\(ES\)\s*:?\s*(.+)", text, re.IGNORECASE)
+    if customer_name_match:
+        result["customer_name"] = customer_name_match.group(1).strip()
+
+    customer_ruc_match = re.search(r"SEÑOR\(ES\).*?RUC\s*:?\s*(\d{11})", text, re.IGNORECASE | re.DOTALL)
+    if customer_ruc_match:
+        result["customer_ruc"] = customer_ruc_match.group(1)
+
+    subtotal_match = re.search(r"VALOR VENTA\s*:?\s*S/\s*([\d,]+\.\d{2})", upper_text)
+    if subtotal_match:
+        result["subtotal"] = parse_decimal_text(subtotal_match.group(1))
+    else:
+        subtotal_match = re.search(r"SUB TOTAL VENTAS\s*:?\s*S/\s*([\d,]+\.\d{2})", upper_text)
+        if subtotal_match:
+            result["subtotal"] = parse_decimal_text(subtotal_match.group(1))
+
+    tax_match = re.search(r"\bIGV\b\s*:?\s*S/\s*([\d,]+\.\d{2})", upper_text)
+    if tax_match:
+        result["tax"] = parse_decimal_text(tax_match.group(1))
+
+    total_match = re.search(r"IMPORTE TOTAL\s*:?\s*S/\s*([\d,]+\.\d{2})", upper_text)
+    if total_match:
+        result["total"] = parse_decimal_text(total_match.group(1))
+    else:
+        total_match = re.search(r"\bTOTAL\b\s*:?\s*S/\s*([\d,]+\.\d{2})", upper_text)
+        if total_match:
+            result["total"] = parse_decimal_text(total_match.group(1))
+
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
+    ignored_words = {"FACTURA", "BOLETA", "RECIBO", "RUC", "FECHA", "TOTAL", "SUBTOTAL", "IGV"}
+
+    for line in lines[:10]:
+        line_upper = line.upper()
+        if len(line) > 4 and not any(word in line_upper for word in ignored_words):
+            if not re.fullmatch(r"[\d\W]+", line):
+                result["supplier_name"] = line
+                break
+
+    return result
 
 
 # =========================
@@ -300,7 +476,7 @@ def list_suppliers_full():
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, name, phone, email, address, notes
+                SELECT id, name, phone, email, address, notes, ruc
                 FROM suppliers
                 ORDER BY name ASC
             """)
@@ -321,7 +497,7 @@ def get_supplier_by_id(supplier_id: int):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT id, name, phone, email, address, notes
+                SELECT id, name, phone, email, address, notes, ruc
                 FROM suppliers
                 WHERE id=%s
             """, (supplier_id,))
@@ -957,6 +1133,345 @@ def delete_kardex_move(kardex_id: int):
 
 
 # =========================
+# FACTURAS PDF
+# =========================
+
+def create_invoice_file_record(original_filename: str, stored_filename: str, file_path: str, file_size: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO invoice_files (
+                    original_filename,
+                    stored_filename,
+                    file_path,
+                    mime_type,
+                    file_size,
+                    status
+                )
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (
+                original_filename,
+                stored_filename,
+                file_path,
+                "application/pdf",
+                file_size,
+                "PENDIENTE"
+            ))
+            invoice_file_id = cur.fetchone()[0]
+        conn.commit()
+        return invoice_file_id
+
+
+def update_invoice_file_status(invoice_file_id: int, status: str, error_message: str = None):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE invoice_files
+                SET status = %s,
+                    error_message = %s
+                WHERE id = %s
+            """, (status, error_message, invoice_file_id))
+        conn.commit()
+
+
+def create_invoice_log(invoice_file_id: int, event_type: str, event_message: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO invoice_logs (invoice_file_id, event_type, event_message)
+                VALUES (%s, %s, %s)
+            """, (invoice_file_id, event_type, event_message))
+        conn.commit()
+
+
+def create_invoice(
+    invoice_file_id: int,
+    supplier_id: int | None,
+    supplier_name: str,
+    supplier_ruc: str,
+    invoice_type: str,
+    invoice_series: str,
+    invoice_number: str,
+    full_number: str,
+    issue_date,
+    due_date,
+    currency: str,
+    subtotal,
+    tax,
+    total,
+    raw_text: str,
+    raw_json
+):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO invoices (
+                    invoice_file_id,
+                    supplier_id,
+                    supplier_name,
+                    supplier_ruc,
+                    invoice_type,
+                    invoice_series,
+                    invoice_number,
+                    full_number,
+                    issue_date,
+                    due_date,
+                    currency,
+                    subtotal,
+                    tax,
+                    total,
+                    raw_text,
+                    raw_json
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """, (
+                invoice_file_id,
+                supplier_id,
+                supplier_name or None,
+                supplier_ruc or None,
+                invoice_type or None,
+                invoice_series or None,
+                invoice_number or None,
+                full_number or None,
+                issue_date or None,
+                due_date or None,
+                currency or "PEN",
+                subtotal or 0,
+                tax or 0,
+                total or 0,
+                raw_text or None,
+                json.dumps(raw_json) if raw_json else None
+            ))
+            invoice_id = cur.fetchone()[0]
+        conn.commit()
+        return invoice_id
+
+
+def create_invoice_item(
+    invoice_id: int,
+    item_order: int,
+    description: str,
+    qty,
+    unit_measure: str,
+    unit_price,
+    line_total
+):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO invoice_items (
+                    invoice_id,
+                    item_order,
+                    description,
+                    qty,
+                    unit_measure,
+                    unit_price,
+                    line_total
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (
+                invoice_id,
+                item_order,
+                description,
+                qty or 0,
+                unit_measure or None,
+                unit_price or 0,
+                line_total or 0
+            ))
+        conn.commit()
+
+
+def list_invoices(q="", ruc="", date_from="", date_to="", total_min="", total_max=""):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            sql = """
+                SELECT
+                    i.id,
+                    i.supplier_name,
+                    i.supplier_ruc,
+                    i.invoice_type,
+                    i.full_number,
+                    i.issue_date,
+                    i.currency,
+                    i.total,
+                    f.original_filename,
+                    f.status
+                FROM invoices i
+                JOIN invoice_files f ON f.id = i.invoice_file_id
+                WHERE 1=1
+            """
+            params = []
+
+            if q:
+                sql += """
+                    AND (
+                        COALESCE(i.supplier_name, '') ILIKE %s
+                        OR COALESCE(i.full_number, '') ILIKE %s
+                        OR COALESCE(i.raw_text, '') ILIKE %s
+                    )
+                """
+                like_q = f"%{q}%"
+                params.extend([like_q, like_q, like_q])
+
+            if ruc:
+                sql += " AND COALESCE(i.supplier_ruc, '') ILIKE %s"
+                params.append(f"%{ruc}%")
+
+            if date_from:
+                sql += " AND i.issue_date >= %s"
+                params.append(date_from)
+
+            if date_to:
+                sql += " AND i.issue_date <= %s"
+                params.append(date_to)
+
+            if total_min:
+                sql += " AND i.total >= %s"
+                params.append(total_min)
+
+            if total_max:
+                sql += " AND i.total <= %s"
+                params.append(total_max)
+
+            sql += " ORDER BY i.id DESC"
+
+            cur.execute(sql, params)
+            return cur.fetchall()
+
+
+def get_invoice_by_id(invoice_id: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    i.id,
+                    i.invoice_file_id,
+                    i.supplier_id,
+                    i.supplier_name,
+                    i.supplier_ruc,
+                    i.invoice_type,
+                    i.invoice_series,
+                    i.invoice_number,
+                    i.full_number,
+                    i.issue_date,
+                    i.due_date,
+                    i.currency,
+                    i.subtotal,
+                    i.tax,
+                    i.total,
+                    i.raw_text,
+                    i.raw_json,
+                    i.created_at,
+                    f.original_filename,
+                    f.stored_filename,
+                    f.file_path,
+                    f.status
+                FROM invoices i
+                JOIN invoice_files f ON f.id = i.invoice_file_id
+                WHERE i.id = %s
+            """, (invoice_id,))
+            return cur.fetchone()
+
+
+def get_invoice_items(invoice_id: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    id,
+                    item_order,
+                    description,
+                    qty,
+                    unit_measure,
+                    unit_price,
+                    line_total
+                FROM invoice_items
+                WHERE invoice_id = %s
+                ORDER BY item_order ASC, id ASC
+            """, (invoice_id,))
+            return cur.fetchall()
+
+
+def update_invoice(
+    invoice_id: int,
+    supplier_id: int | None,
+    supplier_name: str,
+    supplier_ruc: str,
+    invoice_type: str,
+    invoice_series: str,
+    invoice_number: str,
+    full_number: str,
+    issue_date,
+    due_date,
+    currency: str,
+    subtotal,
+    tax,
+    total
+):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE invoices
+                SET supplier_id = %s,
+                    supplier_name = %s,
+                    supplier_ruc = %s,
+                    invoice_type = %s,
+                    invoice_series = %s,
+                    invoice_number = %s,
+                    full_number = %s,
+                    issue_date = %s,
+                    due_date = %s,
+                    currency = %s,
+                    subtotal = %s,
+                    tax = %s,
+                    total = %s,
+                    updated_at = NOW()
+                WHERE id = %s
+            """, (
+                supplier_id,
+                supplier_name or None,
+                supplier_ruc or None,
+                invoice_type or None,
+                invoice_series or None,
+                invoice_number or None,
+                full_number or None,
+                issue_date or None,
+                due_date or None,
+                currency or "PEN",
+                subtotal or 0,
+                tax or 0,
+                total or 0,
+                invoice_id
+            ))
+        conn.commit()
+
+
+def delete_invoice(invoice_id: int):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT invoice_file_id FROM invoices WHERE id = %s", (invoice_id,))
+            row = cur.fetchone()
+            if not row:
+                raise ValueError("Factura no encontrada.")
+
+            invoice_file_id = row[0]
+
+            cur.execute("""
+                SELECT stored_filename, file_path
+                FROM invoice_files
+                WHERE id = %s
+            """, (invoice_file_id,))
+            file_row = cur.fetchone()
+
+            cur.execute("DELETE FROM invoices WHERE id = %s", (invoice_id,))
+        conn.commit()
+
+    return file_row
+
+
+# =========================
 # RUTAS
 # =========================
 
@@ -1392,7 +1907,7 @@ def proveedores_nuevo():
             return redirect(url_for("proveedores_nuevo"))
 
         if phone and not validate_phone(phone):
-            flash("El teléfono debe tener entre 7 y 15 dígitos. Puede incluir + al inicio.", "error")
+            flash("El teléfono puede tener entre 7 y 20 caracteres y usar números, +, -, paréntesis y espacios.", "error")
             return redirect(url_for("proveedores_nuevo"))
 
         if email and not validate_email(email):
@@ -1433,7 +1948,7 @@ def proveedores_edit(supplier_id):
             return redirect(url_for("proveedores_edit", supplier_id=supplier_id))
 
         if phone and not validate_phone(phone):
-            flash("El teléfono debe tener entre 7 y 15 dígitos. Puede incluir + al inicio.", "error")
+            flash("El teléfono puede tener entre 7 y 20 caracteres y usar números, +, -, paréntesis y espacios.", "error")
             return redirect(url_for("proveedores_edit", supplier_id=supplier_id))
 
         if email and not validate_email(email):
@@ -1496,7 +2011,7 @@ def cliente_nuevo():
             return redirect(url_for("cliente_nuevo"))
 
         if phone and not validate_phone(phone):
-            flash("El teléfono debe tener entre 7 y 15 dígitos. Puede incluir + al inicio.", "error")
+            flash("El teléfono puede tener entre 7 y 20 caracteres y usar números, +, -, paréntesis y espacios.", "error")
             return redirect(url_for("cliente_nuevo"))
 
         if dni and not validate_dni(dni):
@@ -1545,7 +2060,7 @@ def cliente_edit(customer_id):
             return redirect(url_for("cliente_edit", customer_id=customer_id))
 
         if phone and not validate_phone(phone):
-            flash("El teléfono debe tener entre 7 y 15 dígitos. Puede incluir + al inicio.", "error")
+            flash("El teléfono puede tener entre 7 y 20 caracteres y usar números, +, -, paréntesis y espacios.", "error")
             return redirect(url_for("cliente_edit", customer_id=customer_id))
 
         if dni and not validate_dni(dni):
@@ -1686,8 +2201,8 @@ def venta_nueva():
                 flash("Debes ingresar el nombre o razón social del cliente.", "error")
                 return redirect(url_for("venta_nueva"))
 
-            if customer_phone and not validate_phone(phone=customer_phone):
-                flash("El teléfono del cliente debe tener entre 7 y 15 dígitos. Puede incluir + al inicio.", "error")
+            if customer_phone and not validate_phone(customer_phone):
+                flash("El teléfono del cliente puede tener entre 7 y 20 caracteres y usar números, +, -, paréntesis y espacios.", "error")
                 return redirect(url_for("venta_nueva"))
 
             if customer_dni and not validate_dni(customer_dni):
@@ -1897,6 +2412,351 @@ def kardex_delete(kardex_id):
         flash(f"Error eliminando movimiento: {e}", "error")
 
     return redirect(url_for("kardex"))
+
+
+# =========================
+# FACTURAS PDF - RUTAS
+# =========================
+
+@app.route("/facturas")
+def invoices_list():
+    if not login_required():
+        return redirect(url_for("login"))
+
+    q = request.args.get("q", "").strip()
+    ruc = request.args.get("ruc", "").strip()
+    date_from = request.args.get("date_from", "").strip()
+    date_to = request.args.get("date_to", "").strip()
+    total_min = request.args.get("total_min", "").strip()
+    total_max = request.args.get("total_max", "").strip()
+
+    rows = list_invoices(q, ruc, date_from, date_to, total_min, total_max)
+
+    return render_template(
+        "invoices.html",
+        username=session.get("username"),
+        invoices=rows,
+        q=q,
+        ruc=ruc,
+        date_from=date_from,
+        date_to=date_to,
+        total_min=total_min,
+        total_max=total_max
+    )
+
+
+@app.route("/facturas/nueva", methods=["GET", "POST"])
+def invoice_new():
+    if not login_required():
+        return redirect(url_for("login"))
+
+    suppliers = list_suppliers_full()
+
+    if request.method == "POST":
+        supplier_id_raw = request.form.get("supplier_id", "").strip()
+        supplier_id = int(supplier_id_raw) if supplier_id_raw else None
+
+        supplier_name = request.form.get("supplier_name", "").strip()
+        supplier_ruc = request.form.get("supplier_ruc", "").strip()
+        invoice_type = request.form.get("invoice_type", "").strip()
+        invoice_series = request.form.get("invoice_series", "").strip()
+        invoice_number = request.form.get("invoice_number", "").strip()
+        issue_date = request.form.get("issue_date", "").strip()
+        due_date = request.form.get("due_date", "").strip()
+        currency = request.form.get("currency", "PEN").strip()
+        subtotal = request.form.get("subtotal", "0").strip()
+        tax = request.form.get("tax", "0").strip()
+        total = request.form.get("total", "0").strip()
+
+        file = request.files.get("pdf_file")
+
+        if not file or not file.filename:
+            flash("Debes subir un archivo PDF.", "error")
+            return redirect(url_for("invoice_new"))
+
+        if not allowed_pdf_file(file.filename):
+            flash("Solo se permite subir archivos PDF.", "error")
+            return redirect(url_for("invoice_new"))
+
+        try:
+            safe_name = secure_filename(file.filename)
+            safe_name = unique_invoice_filename(safe_name)
+            save_path = os.path.join(app.config["INVOICE_UPLOAD_FOLDER"], safe_name)
+            file.save(save_path)
+
+            file_size = os.path.getsize(save_path)
+
+            invoice_file_id = create_invoice_file_record(
+                original_filename=file.filename,
+                stored_filename=safe_name,
+                file_path=save_path,
+                file_size=file_size
+            )
+
+            create_invoice_log(invoice_file_id, "SUBIDO", f"Archivo PDF subido: {file.filename}")
+
+            raw_text = extract_text_from_pdf(save_path)
+            auto_data = auto_extract_invoice_data(raw_text)
+
+            if not supplier_name:
+                supplier_name = auto_data["supplier_name"]
+
+            if not supplier_ruc:
+                supplier_ruc = auto_data["supplier_ruc"]
+
+            if not invoice_type:
+                invoice_type = auto_data["invoice_type"]
+
+            if not invoice_series:
+                invoice_series = auto_data["invoice_series"]
+
+            if not invoice_number:
+                invoice_number = auto_data["invoice_number"]
+
+            if not issue_date:
+                issue_date = auto_data["issue_date"]
+
+            if not due_date:
+                due_date = auto_data["due_date"]
+
+            if not currency or currency == "PEN":
+                currency = auto_data["currency"] or currency
+
+            if float(subtotal or 0) == 0:
+                subtotal = auto_data["subtotal"]
+
+            if float(tax or 0) == 0:
+                tax = auto_data["tax"]
+
+            if float(total or 0) == 0:
+                total = auto_data["total"]
+
+            issue_date_db = normalize_date_for_db(str(issue_date)) if issue_date else None
+            due_date_db = normalize_date_for_db(str(due_date)) if due_date else None
+
+            full_number = f"{invoice_series}-{invoice_number}" if invoice_series and invoice_number else ""
+            raw_json = auto_data
+
+            invoice_id = create_invoice(
+                invoice_file_id=invoice_file_id,
+                supplier_id=supplier_id,
+                supplier_name=supplier_name,
+                supplier_ruc=supplier_ruc,
+                invoice_type=invoice_type,
+                invoice_series=invoice_series,
+                invoice_number=invoice_number,
+                full_number=full_number,
+                issue_date=issue_date_db,
+                due_date=due_date_db,
+                currency=currency,
+                subtotal=float(subtotal or 0),
+                tax=float(tax or 0),
+                total=float(total or 0),
+                raw_text=raw_text,
+                raw_json=raw_json
+            )
+
+            update_invoice_file_status(invoice_file_id, "PROCESADO")
+            create_invoice_log(invoice_file_id, "PROCESADO", f"Factura registrada con ID {invoice_id}")
+
+            flash("✅ Factura registrada correctamente.", "ok")
+            return redirect(url_for("invoice_detail", invoice_id=invoice_id))
+
+        except Exception as e:
+            flash(f"Error registrando factura: {e}", "error")
+            return redirect(url_for("invoice_new"))
+
+    return render_template(
+        "invoice_new.html",
+        username=session.get("username"),
+        suppliers=suppliers
+    )
+
+
+@app.route("/facturas/<int:invoice_id>")
+def invoice_detail(invoice_id):
+    if not login_required():
+        return redirect(url_for("login"))
+
+    invoice = get_invoice_by_id(invoice_id)
+    if not invoice:
+        flash("Factura no encontrada.", "error")
+        return redirect(url_for("invoices_list"))
+
+    items = get_invoice_items(invoice_id)
+
+    return render_template(
+        "invoice_detail.html",
+        username=session.get("username"),
+        invoice=invoice,
+        items=items
+    )
+
+
+@app.route("/facturas/<int:invoice_id>/agregar_item", methods=["POST"])
+def invoice_add_item(invoice_id):
+    if not login_required():
+        return redirect(url_for("login"))
+
+    description = request.form.get("description", "").strip()
+    qty = request.form.get("qty", "0").strip()
+    unit_measure = request.form.get("unit_measure", "").strip()
+    unit_price = request.form.get("unit_price", "0").strip()
+    line_total = request.form.get("line_total", "0").strip()
+
+    if not description:
+        flash("La descripción del ítem es obligatoria.", "error")
+        return redirect(url_for("invoice_detail", invoice_id=invoice_id))
+
+    items = get_invoice_items(invoice_id)
+    item_order = len(items) + 1
+
+    try:
+        create_invoice_item(
+            invoice_id=invoice_id,
+            item_order=item_order,
+            description=description,
+            qty=float(qty or 0),
+            unit_measure=unit_measure,
+            unit_price=float(unit_price or 0),
+            line_total=float(line_total or 0)
+        )
+        flash("✅ Ítem agregado correctamente.", "ok")
+    except Exception as e:
+        flash(f"Error agregando ítem: {e}", "error")
+
+    return redirect(url_for("invoice_detail", invoice_id=invoice_id))
+
+
+@app.route("/facturas/<int:invoice_id>/editar", methods=["GET", "POST"])
+def invoice_edit(invoice_id):
+    if not login_required():
+        return redirect(url_for("login"))
+
+    invoice = get_invoice_by_id(invoice_id)
+    if not invoice:
+        flash("Factura no encontrada.", "error")
+        return redirect(url_for("invoices_list"))
+
+    suppliers = list_suppliers_full()
+
+    if request.method == "POST":
+        supplier_id_raw = request.form.get("supplier_id", "").strip()
+        supplier_id = int(supplier_id_raw) if supplier_id_raw else None
+
+        supplier_name = request.form.get("supplier_name", "").strip()
+        supplier_ruc = request.form.get("supplier_ruc", "").strip()
+        invoice_type = request.form.get("invoice_type", "").strip()
+        invoice_series = request.form.get("invoice_series", "").strip()
+        invoice_number = request.form.get("invoice_number", "").strip()
+        issue_date = request.form.get("issue_date", "").strip()
+        due_date = request.form.get("due_date", "").strip()
+        currency = request.form.get("currency", "PEN").strip()
+        subtotal = request.form.get("subtotal", "0").strip()
+        tax = request.form.get("tax", "0").strip()
+        total = request.form.get("total", "0").strip()
+
+        full_number = f"{invoice_series}-{invoice_number}" if invoice_series and invoice_number else ""
+
+        try:
+            update_invoice(
+                invoice_id=invoice_id,
+                supplier_id=supplier_id,
+                supplier_name=supplier_name,
+                supplier_ruc=supplier_ruc,
+                invoice_type=invoice_type,
+                invoice_series=invoice_series,
+                invoice_number=invoice_number,
+                full_number=full_number,
+                issue_date=normalize_date_for_db(issue_date),
+                due_date=normalize_date_for_db(due_date),
+                currency=currency,
+                subtotal=float(subtotal or 0),
+                tax=float(tax or 0),
+                total=float(total or 0)
+            )
+            flash("✅ Factura actualizada correctamente.", "ok")
+            return redirect(url_for("invoice_detail", invoice_id=invoice_id))
+        except Exception as e:
+            flash(f"Error actualizando factura: {e}", "error")
+            return redirect(url_for("invoice_edit", invoice_id=invoice_id))
+
+    return render_template(
+        "invoice_edit.html",
+        username=session.get("username"),
+        invoice=invoice,
+        suppliers=suppliers
+    )
+
+
+@app.route("/facturas/<int:invoice_id>/eliminar", methods=["POST"])
+def invoice_delete(invoice_id):
+    if not login_required():
+        return redirect(url_for("login"))
+
+    try:
+        file_row = delete_invoice(invoice_id)
+
+        if file_row:
+            stored_filename, file_path = file_row
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    pass
+
+        flash("🗑 Factura eliminada correctamente.", "ok")
+    except ValueError as e:
+        flash(str(e), "error")
+    except Exception as e:
+        flash(f"Error eliminando factura: {e}", "error")
+
+    return redirect(url_for("invoices_list"))
+
+
+@app.route("/facturas/leer_pdf", methods=["POST"])
+def invoice_read_pdf():
+    if not login_required():
+        return jsonify({"ok": False, "message": "Sesión no válida"}), 401
+
+    file = request.files.get("pdf_file")
+
+    if not file or not file.filename:
+        return jsonify({"ok": False, "message": "No se recibió ningún archivo PDF."}), 400
+
+    if not allowed_pdf_file(file.filename):
+        return jsonify({"ok": False, "message": "Solo se permiten archivos PDF."}), 400
+
+    temp_filename = secure_filename(file.filename)
+    temp_filename = f"temp_{temp_filename}"
+    temp_path = os.path.join(app.config["INVOICE_UPLOAD_FOLDER"], temp_filename)
+
+    try:
+        file.save(temp_path)
+
+        raw_text = extract_text_from_pdf(temp_path)
+        auto_data = auto_extract_invoice_data(raw_text)
+
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+        return jsonify({
+            "ok": True,
+            "data": auto_data,
+            "raw_text": raw_text[:5000]
+        })
+
+    except Exception as e:
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+        return jsonify({
+            "ok": False,
+            "message": f"Error leyendo PDF: {e}"
+        }), 500
 
 
 if __name__ == "__main__":
