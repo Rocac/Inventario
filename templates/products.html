@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Productos</title>
-<link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='invoices/Icon.png') }}">
 
 <style>
-:root{
+  :root{
   --bg:#f3f6fb;
   --sidebar1:#c62828;
   --sidebar2:#ef5350;
@@ -19,7 +19,7 @@
   --text:#0f172a;
   --muted:#64748b;
   --blue:#2563eb;
-}
+  }
 
 *{box-sizing:border-box}
 
@@ -368,7 +368,7 @@ tbody tr:hover{
   <aside class="sidebar">
     <div class="brand">
       <div class="logo">🏠</div>
-      <div><b>Inventarios</b><br><span style="font-size:12px">Inicio</span></div>
+      <div><b>Inventarios</b><br><span style="font-size:12px">Productos</span></div>
     </div>
 
     <div class="profile">
@@ -504,10 +504,10 @@ tbody tr:hover{
 
                 <td>
                   <div class="actions">
-                    <a href="/productos/{{ p[0] }}/editar" class="btn-icon">✏️</a>
+                    <a href="{{ url_for('products_edit', product_id=p[0], page=page, per_page=per_page, q=search) }}" class="btn-icon">✏️</a>
 
                     <form method="POST"
-                          action="/productos/{{ p[0] }}/eliminar"
+                          action="{{ url_for('products_delete', product_id=p[0]) }}"
                           onsubmit="return confirm('¿Eliminar producto?');">
                       <button class="btn-icon btn-delete" type="submit">🗑</button>
                     </form>

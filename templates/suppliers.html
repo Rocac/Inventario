@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proveedores</title>
-  <link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='invoices/Icon.png') }}">
 
   <style>
     :root{
@@ -12,13 +12,15 @@
       --sidebar1:#c62828;
       --sidebar2:#ef5350;
       --topbar:#c62828;
-      --primary:#c62828;
       --card:#ffffff;
       --text:#0f172a;
       --muted:#64748b;
       --line:#e5e7eb;
       --shadow:0 12px 28px rgba(0,0,0,.10);
       --radius:14px;
+      --blue:#2563eb;
+      --warning:#f59e0b;
+      --danger:#ef4444;
     }
 
     *{box-sizing:border-box}
@@ -32,14 +34,14 @@
 
     .layout{
       display:grid;
-      grid-template-columns:260px 1fr;
+      grid-template-columns:220px 1fr;
       min-height:100vh;
     }
 
     .sidebar{
       background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
       color:#fff;
-      padding:18px 14px;
+      padding:14px 12px;
       position:sticky;
       top:0;
       height:100vh;
@@ -55,8 +57,6 @@
       margin-bottom:14px;
     }
 
-    .profile{background:rgba(255,255,255,.10)}
-
     .logo,.avatar{
       width:38px;
       height:38px;
@@ -64,6 +64,7 @@
       display:grid;
       place-items:center;
       background:rgba(255,255,255,.18);
+      flex-shrink:0;
     }
 
     .menu-title{
@@ -71,6 +72,7 @@
       font-size:11px;
       opacity:.85;
       letter-spacing:.14em;
+      text-transform:uppercase;
     }
 
     .nav a{
@@ -81,10 +83,12 @@
       border-radius:12px;
       color:#fff;
       text-decoration:none;
-      opacity:.95;
+      font-weight:600;
     }
 
-    .nav a:hover{background:rgba(255,255,255,.12)}
+    .nav a:hover{
+      background:rgba(255,255,255,.12);
+    }
 
     .nav a.active{
       background:rgba(255,255,255,.18);
@@ -102,17 +106,12 @@
       color:#fff;
       padding:12px 18px;
       display:flex;
-      align-items:center;
       justify-content:space-between;
+      align-items:center;
+      box-shadow:0 8px 16px rgba(0,0,0,.10);
       position:sticky;
       top:0;
       z-index:5;
-      box-shadow:0 8px 16px rgba(0,0,0,.10);
-    }
-
-    .crumbs{
-      font-size:12px;
-      opacity:.95;
     }
 
     .page{
@@ -145,28 +144,106 @@
     }
 
     .card{
-      background:var(--card);
-      border:1px solid var(--line);
+      background:#fff;
       border-radius:var(--radius);
       box-shadow:var(--shadow);
+      border:1px solid var(--line);
       overflow:hidden;
-      width:100%;
-      max-width:none;
     }
 
     .card-header{
       padding:12px 14px;
       border-bottom:1px solid var(--line);
-      background:#f8fbff;
+      background:#fff;
       display:flex;
       justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .card-header-left{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+
+    .card-subtitle{
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    .card-header-right{
+      display:flex;
       align-items:center;
       gap:10px;
       flex-wrap:wrap;
     }
 
-    .card-body{
-      padding:0;
+    .search-form{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .search-label{
+      font-size:13px;
+      color:var(--muted);
+      font-weight:600;
+    }
+
+    .search-input{
+      padding:10px 12px;
+      border:1px solid #dbe2ea;
+      border-radius:12px;
+      min-width:260px;
+      outline:none;
+      font-size:14px;
+      background:#fff;
+    }
+
+    .search-input:focus{
+      border-color:rgba(37,99,235,.45);
+      box-shadow:0 0 0 3px rgba(37,99,235,.12);
+    }
+
+    .btn{
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid #dbe2ea;
+      background:#fff;
+      color:#111827;
+      text-decoration:none;
+      font-weight:700;
+      font-size:14px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      white-space:nowrap;
+    }
+
+    .btn-primary{
+      background:var(--blue);
+      color:#fff;
+      border:none;
+    }
+
+    .btn-warning{
+      color:#ea580c;
+      border-color:#fdba74;
+      background:#fff7ed;
+    }
+
+    .btn-danger{
+      color:#dc2626;
+      border-color:#fca5a5;
+      background:#fff5f5;
+    }
+
+    .table-wrap{
       overflow-x:auto;
     }
 
@@ -178,17 +255,17 @@
 
     thead th{
       background:#f1f5f9;
-      color:#64748b;
+      padding:12px;
       font-size:12px;
-      letter-spacing:.08em;
       text-transform:uppercase;
       text-align:left;
-      padding:14px 12px;
+      color:#64748b;
       border-bottom:1px solid var(--line);
+      letter-spacing:.04em;
     }
 
     tbody td{
-      padding:14px 12px;
+      padding:12px;
       border-bottom:1px solid var(--line);
       font-size:14px;
       vertical-align:middle;
@@ -198,37 +275,22 @@
       background:#fafcff;
     }
 
-    .btn{
-      padding:10px 12px;
-      border-radius:12px;
-      border:1px solid var(--line);
-      text-decoration:none;
-      font-weight:900;
-      font-size:13px;
-      cursor:pointer;
-      background:#fff;
-      color:var(--text);
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
+    .col-nro{
+      width:60px;
+      text-align:center;
     }
 
-    .primary{
-      background:#2563eb;
-      border-color:transparent;
-      color:#fff;
+    .td-center{
+      text-align:center;
     }
 
-    .warn{
-      background:#fff7ed;
-      color:#ea580c;
-      border-color:#fdba74;
+    .supplier-name{
+      font-weight:800;
+      color:#111827;
     }
 
-    .danger{
-      background:#fef2f2;
-      color:#dc2626;
-      border-color:#fca5a5;
+    .muted{
+      color:var(--muted);
     }
 
     .actions{
@@ -238,8 +300,8 @@
     }
 
     .empty{
-      padding:24px;
       text-align:center;
+      padding:24px;
       color:var(--muted);
       font-size:14px;
     }
@@ -248,9 +310,26 @@
       .layout{
         grid-template-columns:1fr;
       }
+
       .sidebar{
         position:relative;
         height:auto;
+      }
+
+      .search-input{
+        min-width:220px;
+      }
+    }
+
+    @media(max-width:640px){
+      .card-header-right,
+      .search-form{
+        width:100%;
+      }
+
+      .search-input{
+        min-width:100%;
+        width:100%;
       }
     }
   </style>
@@ -258,16 +337,21 @@
 <body>
 
 <div class="layout">
-
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">🏠</div>
-      <div><b>Inventarios</b><br><span style="font-size:12px">Inicio</span></div>
+      <div class="logo">📦</div>
+      <div>
+        <b>Inventarios</b><br>
+        <span style="font-size:12px">Proveedores</span>
+      </div>
     </div>
 
     <div class="profile">
       <div class="avatar">👤</div>
-      <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
+      <div>
+        <div style="font-weight:900">{{ username }}</div>
+        <small>Usuario activo</small>
+      </div>
     </div>
 
     <div class="menu-title">INICIO</div>
@@ -315,59 +399,79 @@
 
       <div class="card">
         <div class="card-header">
-          <b>🏭 Lista de proveedores</b>
-          <a href="/proveedores/nuevo" class="btn primary">+ Agregar</a>
+          <div class="card-header-left">
+            <b> Lista de proveedores</b>
+          </div>
+
+          <div class="card-header-right">
+            <form method="GET" action="{{ url_for('proveedores') }}" class="search-form">
+              <label class="search-label">Buscar:</label>
+              <input
+                type="text"
+                name="q"
+                value="{{ q or '' }}"
+                placeholder="Nombre, teléfono, email..."
+                class="search-input"
+              >
+              <button type="submit" class="btn btn-primary">Buscar</button>
+              <a href="{{ url_for('proveedores') }}" class="btn">Limpiar</a>
+            </form>
+
+            <a href="{{ url_for('proveedores_nuevo') }}" class="btn btn-primary">+ Agregar</a>
+          </div>
         </div>
 
-        <div class="card-body">
-          {% if suppliers and suppliers|length > 0 %}
-            <table>
-              <thead>
-                <tr>
-                  <th>N°</th>
-                  <th>Nombre</th>
-                  <th>Teléfono</th>
-                  <th>Email</th>
-                  <th>Dirección</th>
-                  <th>Notas</th>
-                  <th>Opciones</th>
-                </tr>
-              </thead>
-              <tbody>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-nro">N°</th>
+                <th>Nombre</th>
+                <th>Teléfono</th>
+                <th>Email</th>
+                <th>Dirección</th>
+                <th>Notas</th>
+                <th class="td-center">Opciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if suppliers and suppliers|length > 0 %}
                 {% for s in suppliers %}
                   <tr>
-                    <td>{{ loop.index }}</td>
-                    <td><b>{{ s[1] }}</b></td>
+                    <td class="col-nro">{{ loop.index }}</td>
+                    <td class="supplier-name">{{ s[1] }}</td>
                     <td>{{ s[2] or '-' }}</td>
                     <td>{{ s[3] or '-' }}</td>
                     <td>{{ s[4] or '-' }}</td>
                     <td>{{ s[5] or '-' }}</td>
-                    <td>
+                    <td class="td-center">
                       <div class="actions">
-                        <a href="/proveedores/{{ s[0] }}/editar" class="btn warn">✏️ Editar</a>
+                        <a href="{{ url_for('proveedores_edit', supplier_id=s[0]) }}" class="btn btn-warning">✏️ Editar</a>
 
                         <form method="POST"
-                              action="/proveedores/{{ s[0] }}/eliminar"
-                              onsubmit="return confirm('¿Eliminar este proveedor?');"
+                              action="{{ url_for('proveedores_delete', supplier_id=s[0]) }}"
+                              onsubmit="return confirm('¿Seguro que deseas eliminar este proveedor?');"
                               style="display:inline;">
-                          <button type="submit" class="btn danger">🗑 Eliminar</button>
+                          <button type="submit" class="btn btn-danger">🗑 Eliminar</button>
                         </form>
                       </div>
                     </td>
                   </tr>
                 {% endfor %}
-              </tbody>
-            </table>
-          {% else %}
-            <div class="empty">
-              Aún no hay proveedores. Haz clic en <b>“+ Agregar”</b>.
-            </div>
-          {% endif %}
+              {% else %}
+                <tr>
+                  <td colspan="7" class="empty">
+                    No se encontraron proveedores.
+                  </td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
         </div>
       </div>
+
     </div>
   </div>
-
 </div>
 
 </body>

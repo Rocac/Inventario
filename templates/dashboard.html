@@ -1,86 +1,335 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Inicio</title>
-<link rel="icon" type="image/x-icon" href="https://globaltekperu.com/public/img/favicon.ico">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inicio</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='invoices/Icon.png') }}">
 
-<style>
-:root{
-  --bg:#f3f6fb;
-  --sidebar1:#c62828;
-  --sidebar2:#ef5350;
-  --topbar:#c62828;
-  --primary:#c62828;
-  --card:#ffffff;
-  --text:#0f172a;
-  --muted:#64748b;
-  --line:#e5e7eb;
-  --shadow:0 12px 28px rgba(0,0,0,.10);
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
-.layout{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
-.sidebar{background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));color:#fff;padding:18px 14px;position:sticky;top:0;height:100vh}
-.brand,.profile{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.12);margin-bottom:14px}
-.profile{background:rgba(255,255,255,.10)}
-.logo,.avatar{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.18)}
-.menu-title{margin:14px 10px 8px;font-size:11px;opacity:.85;letter-spacing:.14em}
-.nav a{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;color:#fff;text-decoration:none;opacity:.95}
-.nav a:hover{background:rgba(255,255,255,.12)}
-.nav a.active{background:rgba(255,255,255,.18);font-weight:800}
+  <style>
+    :root{
+      --bg:#f3f6fb;
+      --sidebar1:#c62828;
+      --sidebar2:#ef5350;
+      --topbar:#c62828;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e5e7eb;
+      --shadow:0 12px 28px rgba(0,0,0,.10);
+      --radius:16px;
+      --blue:#2563eb;
+      --green:#16a34a;
+      --orange:#f59e0b;
+      --red:#dc2626;
+    }
 
-.content{display:flex;flex-direction:column}
-.topbar{background:var(--topbar);color:#fff;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 8px 16px rgba(0,0,0,.10)}
-.page{padding:18px}
-h1{margin:0 0 16px;font-size:26px}
+    *{box-sizing:border-box}
 
-.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
-.card-mini{
-  background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);
-  padding:16px
-}
-.card-mini .label{font-size:12px;color:var(--muted);font-weight:800;text-transform:uppercase}
-.card-mini .value{font-size:28px;font-weight:900;margin-top:6px}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
 
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.card{
-  background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden
-}
-.card-header{padding:12px 14px;border-bottom:1px solid var(--line);background:#f8fbff;font-weight:800}
-.table-wrap{overflow:auto}
-table{width:100%;border-collapse:collapse}
-th,td{padding:12px;border-bottom:1px solid var(--line);text-align:left;font-size:14px}
-th{background:#f1f5f9;color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
-tbody tr:hover{background:#fafcff}
-.badge-low{display:inline-block;padding:6px 10px;border-radius:999px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-weight:800;font-size:12px}
-.badge-in{display:inline-block;padding:6px 10px;border-radius:999px;background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;font-weight:800;font-size:12px}
-.badge-out{display:inline-block;padding:6px 10px;border-radius:999px;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;font-weight:800;font-size:12px}
-.full{grid-column:1/-1}
+    .layout{
+      display:grid;
+      grid-template-columns:220px 1fr;
+      min-height:100vh;
+    }
 
-@media(max-width:1200px){
-  .cards{grid-template-columns:repeat(2,1fr)}
-}
-@media(max-width:980px){
-  .layout{grid-template-columns:1fr}
-  .sidebar{position:relative;height:auto}
-  .grid{grid-template-columns:1fr}
-}
-</style>
+    .sidebar{
+      background:linear-gradient(180deg,var(--sidebar1),var(--sidebar2));
+      color:#fff;
+      padding:14px 12px;
+      position:sticky;
+      top:0;
+      height:100vh;
+    }
+
+    .brand,.profile{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      background:rgba(255,255,255,.12);
+      margin-bottom:14px;
+    }
+
+    .logo,.avatar{
+      width:38px;
+      height:38px;
+      border-radius:12px;
+      display:grid;
+      place-items:center;
+      background:rgba(255,255,255,.18);
+      flex-shrink:0;
+    }
+
+    .menu-title{
+      margin:14px 10px 8px;
+      font-size:11px;
+      opacity:.85;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+    }
+
+    .nav a{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-radius:12px;
+      color:#fff;
+      text-decoration:none;
+      font-weight:600;
+    }
+
+    .nav a:hover{
+      background:rgba(255,255,255,.12);
+    }
+
+    .nav a.active{
+      background:rgba(255,255,255,.18);
+      font-weight:800;
+    }
+
+    .content{
+      min-width:0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .topbar{
+      background:var(--topbar);
+      color:#fff;
+      padding:12px 18px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      box-shadow:0 8px 16px rgba(0,0,0,.10);
+      position:sticky;
+      top:0;
+      z-index:5;
+    }
+
+    .page{
+      padding:18px;
+    }
+
+    h1{
+      margin:6px 0 16px;
+      font-size:24px;
+    }
+
+    .flash{
+      width:100%;
+      margin-bottom:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:13px;
+    }
+
+    .flash.ok{
+      border-color:rgba(22,163,74,.25);
+      background:rgba(22,163,74,.08);
+    }
+
+    .flash.error{
+      border-color:rgba(239,68,68,.25);
+      background:rgba(239,68,68,.08);
+    }
+
+    .summary-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+      gap:16px;
+      margin-bottom:18px;
+    }
+
+    .summary-card{
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:16px;
+      box-shadow:0 10px 24px rgba(0,0,0,.08);
+      padding:18px;
+    }
+
+    .summary-card h3{
+      margin:0 0 8px 0;
+      font-size:14px;
+      color:#64748b;
+      font-weight:700;
+    }
+
+    .summary-card p{
+      margin:0;
+      font-size:28px;
+      font-weight:800;
+      color:#0f172a;
+    }
+
+    .section-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:18px;
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:#fff;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      border:1px solid var(--line);
+      overflow:hidden;
+    }
+
+    .card-header{
+      padding:12px 14px;
+      border-bottom:1px solid var(--line);
+      background:#fff;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .card-header b{
+      font-size:15px;
+    }
+
+    .card-body{
+      padding:14px;
+    }
+
+    .table-wrap{
+      overflow-x:auto;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:700px;
+    }
+
+    thead th{
+      background:#f1f5f9;
+      padding:12px;
+      font-size:12px;
+      text-transform:uppercase;
+      text-align:left;
+      color:#64748b;
+      border-bottom:1px solid var(--line);
+      letter-spacing:.04em;
+    }
+
+    tbody td{
+      padding:12px;
+      border-bottom:1px solid var(--line);
+      font-size:14px;
+      vertical-align:middle;
+    }
+
+    tbody tr:hover{
+      background:#fafcff;
+    }
+
+    .tag{
+      display:inline-block;
+      padding:5px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .tag-in{
+      background:#ecfdf3;
+      color:#166534;
+      border:1px solid #bbf7d0;
+    }
+
+    .tag-out{
+      background:#fff7ed;
+      color:#b45309;
+      border:1px solid #fed7aa;
+    }
+
+    .low-stock{
+      color:var(--red);
+      font-weight:800;
+    }
+
+    .btn{
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid #dbe2ea;
+      background:#fff;
+      color:#111827;
+      text-decoration:none;
+      font-weight:700;
+      font-size:14px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      white-space:nowrap;
+    }
+
+    .btn-primary{
+      background:var(--blue);
+      color:#fff;
+      border:none;
+    }
+
+    .empty{
+      text-align:center;
+      padding:24px;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    @media(max-width:1100px){
+      .section-grid{
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media(max-width:980px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+
+      .sidebar{
+        position:relative;
+        height:auto;
+      }
+    }
+  </style>
 </head>
 <body>
 
 <div class="layout">
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">🏠</div>
-      <div><b>Inventarios</b><br><span style="font-size:12px">Inicio</span></div>
+      <div class="logo">📦</div>
+      <div>
+        <b>Inventarios</b><br>
+        <span style="font-size:12px">Panel principal</span>
+      </div>
     </div>
 
     <div class="profile">
       <div class="avatar">👤</div>
-      <div><div style="font-weight:900">{{ username }}</div><small>Usuario activo</small></div>
+      <div>
+        <div style="font-weight:900">{{ username }}</div>
+        <small>Usuario activo</small>
+      </div>
     </div>
 
     <div class="menu-title">INICIO</div>
@@ -113,38 +362,65 @@ tbody tr:hover{background:#fafcff}
   <div class="content">
     <div class="topbar">
       <div style="font-weight:900">Inicio</div>
-      <div>Resumen general del inventario</div>
+      <div>Home / Dashboard</div>
     </div>
 
     <div class="page">
-      <h1>Panel principal</h1>
+      <h1>Resumen general del sistema</h1>
 
-      <div class="cards">
-        <div class="card-mini">
-          <div class="label">Productos</div>
-          <div class="value">{{ data.total_products }}</div>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <!-- RESUMEN GENERAL -->
+      <div class="summary-grid">
+        <div class="summary-card">
+          <h3>Total productos</h3>
+          <p>{{ data.total_products }}</p>
         </div>
-        <div class="card-mini">
-          <div class="label">Categorías</div>
-          <div class="value">{{ data.total_categories }}</div>
+
+        <div class="summary-card">
+          <h3>Total categorías</h3>
+          <p>{{ data.total_categories }}</p>
         </div>
-        <div class="card-mini">
-          <div class="label">Proveedores</div>
-          <div class="value">{{ data.total_suppliers }}</div>
+
+        <div class="summary-card">
+          <h3>Total proveedores</h3>
+          <p>{{ data.total_suppliers }}</p>
         </div>
-        <div class="card-mini">
-          <div class="label">Clientes</div>
-          <div class="value">{{ data.total_customers }}</div>
+
+        <div class="summary-card">
+          <h3>Total clientes</h3>
+          <p>{{ data.total_customers }}</p>
         </div>
-        <div class="card-mini">
-          <div class="label">Unidades en stock</div>
-          <div class="value">{{ data.total_stock_units }}</div>
+
+        <div class="summary-card">
+          <h3>Total unidades en stock</h3>
+          <p>{{ data.total_stock_units }}</p>
+        </div>
+
+        <div class="summary-card">
+          <h3>Total facturas</h3>
+          <p>{{ data.total_invoices }}</p>
+        </div>
+
+        <div class="summary-card">
+          <h3>Monto total facturas</h3>
+          <p>S/ {{ '%.2f'|format(data.invoices_total_amount or 0) }}</p>
         </div>
       </div>
 
-      <div class="grid">
+      <!-- BLOQUE 1 -->
+      <div class="section-grid">
         <div class="card">
-          <div class="card-header">Productos con stock bajo</div>
+          <div class="card-header">
+            <b>⚠️ Productos con stock bajo</b>
+            <a href="/productos" class="btn">Ver productos</a>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -152,21 +428,23 @@ tbody tr:hover{background:#fafcff}
                   <th>Código</th>
                   <th>Producto</th>
                   <th>Stock</th>
-                  <th>Mínimo</th>
+                  <th>Stock mínimo</th>
                 </tr>
               </thead>
               <tbody>
-                {% if data.low_stock %}
-                  {% for p in data.low_stock %}
-                  <tr>
-                    <td>{{ p[0] }}</td>
-                    <td>{{ p[1] }}</td>
-                    <td><span class="badge-low">{{ p[2] }}</span></td>
-                    <td>{{ p[3] }}</td>
-                  </tr>
+                {% if data.low_stock and data.low_stock|length > 0 %}
+                  {% for item in data.low_stock %}
+                    <tr>
+                      <td>{{ item[0] }}</td>
+                      <td>{{ item[1] }}</td>
+                      <td class="low-stock">{{ item[2] }}</td>
+                      <td>{{ item[3] }}</td>
+                    </tr>
                   {% endfor %}
                 {% else %}
-                  <tr><td colspan="4">No hay productos con stock bajo.</td></tr>
+                  <tr>
+                    <td colspan="4" class="empty">No hay productos con stock bajo.</td>
+                  </tr>
                 {% endif %}
               </tbody>
             </table>
@@ -174,7 +452,10 @@ tbody tr:hover{background:#fafcff}
         </div>
 
         <div class="card">
-          <div class="card-header">Productos con más salidas</div>
+          <div class="card-header">
+            <b>📤 Productos con más salidas</b>
+            <a href="/salidas" class="btn">Ver salidas</a>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -185,24 +466,31 @@ tbody tr:hover{background:#fafcff}
                 </tr>
               </thead>
               <tbody>
-                {% if data.top_outputs %}
-                  {% for p in data.top_outputs %}
-                  <tr>
-                    <td>{{ p[0] }}</td>
-                    <td>{{ p[1] }}</td>
-                    <td><span class="badge-out">{{ p[2] }}</span></td>
-                  </tr>
+                {% if data.top_outputs and data.top_outputs|length > 0 %}
+                  {% for item in data.top_outputs %}
+                    <tr>
+                      <td>{{ item[0] }}</td>
+                      <td>{{ item[1] }}</td>
+                      <td>{{ item[2] }}</td>
+                    </tr>
                   {% endfor %}
                 {% else %}
-                  <tr><td colspan="3">No hay salidas registradas.</td></tr>
+                  <tr>
+                    <td colspan="3" class="empty">No hay salidas registradas.</td>
+                  </tr>
                 {% endif %}
               </tbody>
             </table>
           </div>
         </div>
+      </div>
 
+      <!-- BLOQUE 2 -->
+      <div class="section-grid">
         <div class="card">
-          <div class="card-header">Productos con más entradas</div>
+          <div class="card-header">
+            <b>📥 Productos con más entradas</b>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
@@ -213,16 +501,18 @@ tbody tr:hover{background:#fafcff}
                 </tr>
               </thead>
               <tbody>
-                {% if data.top_inputs %}
-                  {% for p in data.top_inputs %}
-                  <tr>
-                    <td>{{ p[0] }}</td>
-                    <td>{{ p[1] }}</td>
-                    <td><span class="badge-in">{{ p[2] }}</span></td>
-                  </tr>
+                {% if data.top_inputs and data.top_inputs|length > 0 %}
+                  {% for item in data.top_inputs %}
+                    <tr>
+                      <td>{{ item[0] }}</td>
+                      <td>{{ item[1] }}</td>
+                      <td>{{ item[2] }}</td>
+                    </tr>
                   {% endfor %}
                 {% else %}
-                  <tr><td colspan="3">No hay entradas registradas.</td></tr>
+                  <tr>
+                    <td colspan="3" class="empty">No hay entradas registradas.</td>
+                  </tr>
                 {% endif %}
               </tbody>
             </table>
@@ -230,46 +520,45 @@ tbody tr:hover{background:#fafcff}
         </div>
 
         <div class="card">
-          <div class="card-header">Últimos movimientos</div>
+          <div class="card-header">
+            <b>📄 Últimas facturas registradas</b>
+            <a href="/facturas" class="btn btn-primary">Ver todas</a>
+          </div>
           <div class="table-wrap">
             <table>
               <thead>
                 <tr>
+                  <th>N°</th>
+                  <th>Proveedor</th>
+                  <th>Número</th>
                   <th>Fecha</th>
-                  <th>Código</th>
-                  <th>Producto</th>
-                  <th>Movimiento</th>
-                  <th>Cant.</th>
-                  <th>Stock final</th>
+                  <th>Moneda</th>
+                  <th>Total</th>
                 </tr>
               </thead>
               <tbody>
-                {% if data.recent_moves %}
-                  {% for m in data.recent_moves %}
-                  <tr>
-                    <td>{{ m[0] }}</td>
-                    <td>{{ m[1] }}</td>
-                    <td>{{ m[2] }}</td>
-                    <td>
-                      {% if m[3] == 'ENTRADA' %}
-                        <span class="badge-in">ENTRADA</span>
-                      {% else %}
-                        <span class="badge-out">{{ m[3] }}</span>
-                      {% endif %}
-                    </td>
-                    <td>{{ m[4] }}</td>
-                    <td>{{ m[5] }}</td>
-                  </tr>
+                {% if data.recent_invoices and data.recent_invoices|length > 0 %}
+                  {% for inv in data.recent_invoices %}
+                    <tr>
+                      <td>{{ loop.index }}</td>
+                      <td>{{ inv[1] }}</td>
+                      <td>{{ inv[2] }}</td>
+                      <td>{{ inv[5] or '-' }}</td>
+                      <td>{{ inv[3] }}</td>
+                      <td>{{ inv[3] }} {{ '%.2f'|format(inv[4] or 0) }}</td>
+                    </tr>
                   {% endfor %}
                 {% else %}
-                  <tr><td colspan="6">No hay movimientos registrados.</td></tr>
+                  <tr>
+                    <td colspan="6" class="empty">No hay facturas registradas.</td>
+                  </tr>
                 {% endif %}
               </tbody>
             </table>
           </div>
         </div>
-
       </div>
+
     </div>
   </div>
 </div>

@@ -132,18 +132,16 @@ def parse_decimal_text(value: str):
         return 0.0
 
 
-def normalize_date_for_db(date_str: str) -> str | None:
+def normalize_date_for_db(date_str: str):
     if not date_str:
         return None
     date_str = date_str.strip()
     if not date_str:
         return None
 
-    # Ya viene ISO
     if re.fullmatch(r"\d{4}-\d{2}-\d{2}", date_str):
         return date_str
 
-    # dd/mm/yyyy o dd-mm-yyyy -> yyyy-mm-dd
     m = re.fullmatch(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})", date_str)
     if m:
         d, mo, y = m.groups()
@@ -405,13 +403,13 @@ def list_categories(q: str = ""):
                     SELECT id, name, description
                     FROM categories
                     WHERE name ILIKE %s
-                    ORDER BY id ASC
+                    ORDER BY LOWER(name) ASC
                 """, ("%" + q + "%",))
             else:
                 cur.execute("""
                     SELECT id, name, description
                     FROM categories
-                    ORDER BY id ASC
+                    ORDER BY LOWER(name) ASC
                 """)
             return cur.fetchall()
 
@@ -456,7 +454,6 @@ def delete_category(category_id: int):
             used = cur.fetchone()[0]
             if used > 0:
                 raise ValueError("No se puede eliminar: hay productos usando esta categoría.")
-
             cur.execute("DELETE FROM categories WHERE id = %s", (category_id,))
         conn.commit()
 
@@ -468,18 +465,34 @@ def delete_category(category_id: int):
 def list_suppliers():
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, name FROM suppliers ORDER BY name ASC")
+            cur.execute("SELECT id, name FROM suppliers ORDER BY LOWER(name) ASC")
             return cur.fetchall()
 
 
-def list_suppliers_full():
+def list_suppliers_full(q: str = ""):
+    q = (q or "").strip()
+
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
-                SELECT id, name, phone, email, address, notes, ruc
-                FROM suppliers
-                ORDER BY name ASC
-            """)
+            if q:
+                cur.execute("""
+                    SELECT id, name, phone, email, address, notes, ruc
+                    FROM suppliers
+                    WHERE
+                        name ILIKE %s
+                        OR COALESCE(phone, '') ILIKE %s
+                        OR COALESCE(email, '') ILIKE %s
+                        OR COALESCE(address, '') ILIKE %s
+                        OR COALESCE(notes, '') ILIKE %s
+                        OR COALESCE(ruc, '') ILIKE %s
+                    ORDER BY LOWER(name) ASC
+                """, (f"%{q}%", f"%{q}%", f"%{q}%", f"%{q}%", f"%{q}%", f"%{q}%"))
+            else:
+                cur.execute("""
+                    SELECT id, name, phone, email, address, notes, ruc
+                    FROM suppliers
+                    ORDER BY LOWER(name) ASC
+                """)
             return cur.fetchall()
 
 
@@ -529,7 +542,7 @@ def delete_supplier(supplier_id: int):
 def list_customers():
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, name FROM customers ORDER BY name ASC")
+            cur.execute("SELECT id, name FROM customers ORDER BY LOWER(name) ASC")
             return cur.fetchall()
 
 
@@ -539,7 +552,7 @@ def list_customers_full():
             cur.execute("""
                 SELECT id, name, phone, dni, ruc, email, address
                 FROM customers
-                ORDER BY name ASC
+                ORDER BY LOWER(name) ASC
             """)
             return cur.fetchall()
 
@@ -662,7 +675,7 @@ def get_products_for_sale():
             cur.execute("""
                 SELECT id, code, name, stock, price
                 FROM products
-                ORDER BY name ASC
+                ORDER BY LOWER(name) ASC
             """)
             return cur.fetchall()
 
@@ -752,7 +765,7 @@ def get_dashboard_summary():
                 SELECT code, name, stock, min_stock
                 FROM products
                 WHERE stock <= min_stock
-                ORDER BY stock ASC, name ASC
+                ORDER BY stock ASC, LOWER(name) ASC
                 LIMIT 10
             """)
             low_stock = cur.fetchall()
@@ -766,7 +779,7 @@ def get_dashboard_summary():
                 JOIN products p ON p.id = k.product_id
                 WHERE k.movement = 'SALIDA'
                 GROUP BY p.code, p.name
-                ORDER BY total_out DESC, p.name ASC
+                ORDER BY total_out DESC, LOWER(p.name) ASC
                 LIMIT 10
             """)
             top_outputs = cur.fetchall()
@@ -780,7 +793,7 @@ def get_dashboard_summary():
                 JOIN products p ON p.id = k.product_id
                 WHERE k.movement = 'ENTRADA'
                 GROUP BY p.code, p.name
-                ORDER BY total_in DESC, p.name ASC
+                ORDER BY total_in DESC, LOWER(p.name) ASC
                 LIMIT 10
             """)
             top_inputs = cur.fetchall()
@@ -801,6 +814,50 @@ def get_dashboard_summary():
             """)
             recent_moves = cur.fetchall()
 
+            # FACTURAS
+            cur.execute("SELECT COUNT(*) FROM invoices")
+            total_invoices = cur.fetchone()[0]
+
+            cur.execute("SELECT COALESCE(SUM(total), 0) FROM invoices")
+            invoices_total_amount = cur.fetchone()[0]
+
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM invoice_files
+                WHERE status = 'PROCESADO'
+            """)
+            processed_invoices = cur.fetchone()[0]
+
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM invoice_files
+                WHERE status = 'PENDIENTE'
+            """)
+            pending_invoices = cur.fetchone()[0]
+
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM invoice_files
+                WHERE status = 'ERROR'
+            """)
+            error_invoices = cur.fetchone()[0]
+
+            cur.execute("""
+                SELECT
+                    i.id,
+                    COALESCE(i.supplier_name, '-') AS supplier_name,
+                    COALESCE(i.full_number, '-') AS full_number,
+                    COALESCE(i.currency, 'PEN') AS currency,
+                    COALESCE(i.total, 0) AS total,
+                    TO_CHAR(i.issue_date, 'DD-MM-YYYY') AS issue_date,
+                    COALESCE(f.status, 'PENDIENTE') AS status
+                FROM invoices i
+                JOIN invoice_files f ON f.id = i.invoice_file_id
+                ORDER BY i.id DESC
+                LIMIT 5
+            """)
+            recent_invoices = cur.fetchall()
+
     return {
         "total_products": total_products,
         "total_categories": total_categories,
@@ -811,6 +868,13 @@ def get_dashboard_summary():
         "top_outputs": top_outputs,
         "top_inputs": top_inputs,
         "recent_moves": recent_moves,
+
+        "total_invoices": total_invoices,
+        "invoices_total_amount": invoices_total_amount,
+        "processed_invoices": processed_invoices,
+        "pending_invoices": pending_invoices,
+        "error_invoices": error_invoices,
+        "recent_invoices": recent_invoices,
     }
 
 
@@ -873,7 +937,7 @@ def register_stock_output(product_id: int, qty: int, reason: str, note: str):
 
 def create_sale_full(
     document_type: str,
-    customer_id: int | None,
+    customer_id,
     customer_name: str,
     customer_doc: str,
     customer_email: str,
@@ -1187,7 +1251,7 @@ def create_invoice_log(invoice_file_id: int, event_type: str, event_message: str
 
 def create_invoice(
     invoice_file_id: int,
-    supplier_id: int | None,
+    supplier_id,
     supplier_name: str,
     supplier_ruc: str,
     invoice_type: str,
@@ -1396,7 +1460,7 @@ def get_invoice_items(invoice_id: int):
 
 def update_invoice(
     invoice_id: int,
-    supplier_id: int | None,
+    supplier_id,
     supplier_name: str,
     supplier_ruc: str,
     invoice_type: str,
@@ -1490,9 +1554,9 @@ def login():
         if user:
             session["user_id"] = user[0]
             session["username"] = user[1]
-            return redirect(url_for("dashboard"))
+            return redirect(url_for("dashboard"))  # o la ruta que uses
 
-        flash("Usuario o contraseña incorrectos", "error")
+        flash("Usuario o contraseña incorrectos.", "error")
         return redirect(url_for("login"))
 
     return render_template("login.html")
@@ -1757,10 +1821,14 @@ def products_edit(product_id):
     if not login_required():
         return redirect(url_for("login"))
 
+    page = request.values.get("page", "1")
+    per_page = request.values.get("per_page", "10")
+    search = request.values.get("q", "").strip()
+
     p = get_product_by_id(product_id)
     if not p:
         flash("Producto no encontrado.", "error")
-        return redirect(url_for("products_list"))
+        return redirect(url_for("products_list", page=page, per_page=per_page, q=search))
 
     categories = list_categories()
     suppliers = list_suppliers()
@@ -1783,20 +1851,20 @@ def products_edit(product_id):
 
         if not code:
             flash("El código es obligatorio.", "error")
-            return redirect(url_for("products_edit", product_id=product_id))
+            return redirect(url_for("products_edit", product_id=product_id, page=page, per_page=per_page, q=search))
 
         if not name:
             flash("El nombre es obligatorio.", "error")
-            return redirect(url_for("products_edit", product_id=product_id))
+            return redirect(url_for("products_edit", product_id=product_id, page=page, per_page=per_page, q=search))
 
         if not category_id:
             flash("Debes seleccionar una categoría.", "error")
-            return redirect(url_for("products_edit", product_id=product_id))
+            return redirect(url_for("products_edit", product_id=product_id, page=page, per_page=per_page, q=search))
 
         category_row = get_category_by_id(category_id)
         if not category_row:
             flash("La categoría seleccionada no existe.", "error")
-            return redirect(url_for("products_edit", product_id=product_id))
+            return redirect(url_for("products_edit", product_id=product_id, page=page, per_page=per_page, q=search))
 
         category = category_row[1]
 
@@ -1806,7 +1874,7 @@ def products_edit(product_id):
                 raise ValueError
         except Exception:
             flash("Stock inválido (0 o más).", "error")
-            return redirect(url_for("products_edit", product_id=product_id))
+            return redirect(url_for("products_edit", product_id=product_id, page=page, per_page=per_page, q=search))
 
         try:
             min_stock = int(min_stock_raw)
@@ -1814,7 +1882,7 @@ def products_edit(product_id):
                 raise ValueError
         except Exception:
             flash("Stock mínimo inválido (0 o más).", "error")
-            return redirect(url_for("products_edit", product_id=product_id))
+            return redirect(url_for("products_edit", product_id=product_id, page=page, per_page=per_page, q=search))
 
         try:
             price = float(price_raw.replace(",", "."))
@@ -1822,7 +1890,7 @@ def products_edit(product_id):
                 raise ValueError
         except Exception:
             flash("Precio inválido (0 o más).", "error")
-            return redirect(url_for("products_edit", product_id=product_id))
+            return redirect(url_for("products_edit", product_id=product_id, page=page, per_page=per_page, q=search))
 
         try:
             price_usd = float(price_usd_raw.replace(",", "."))
@@ -1830,7 +1898,7 @@ def products_edit(product_id):
                 raise ValueError
         except Exception:
             flash("Precio en dólares inválido (0 o más).", "error")
-            return redirect(url_for("products_edit", product_id=product_id))
+            return redirect(url_for("products_edit", product_id=product_id, page=page, per_page=per_page, q=search))
 
         try:
             update_product(
@@ -1848,20 +1916,23 @@ def products_edit(product_id):
             )
         except psycopg.errors.UniqueViolation:
             flash("Ese código ya existe. Usa otro código.", "error")
-            return redirect(url_for("products_edit", product_id=product_id))
+            return redirect(url_for("products_edit", product_id=product_id, page=page, per_page=per_page, q=search))
         except Exception as e:
             flash(f"Error actualizando producto: {e}", "error")
-            return redirect(url_for("products_edit", product_id=product_id))
+            return redirect(url_for("products_edit", product_id=product_id, page=page, per_page=per_page, q=search))
 
         flash("✅ Producto actualizado.", "ok")
-        return redirect(url_for("products_list"))
+        return redirect(url_for("products_list", page=page, per_page=per_page, q=search))
 
     return render_template(
         "product_edit.html",
         username=session.get("username"),
         p=p,
         categories=categories,
-        suppliers=suppliers
+        suppliers=suppliers,
+        page=page,
+        per_page=per_page,
+        search=search
     )
 
 
@@ -1886,8 +1957,15 @@ def proveedores():
     if not login_required():
         return redirect(url_for("login"))
 
-    suppliers = list_suppliers_full()
-    return render_template("suppliers.html", username=session.get("username"), suppliers=suppliers)
+    q = request.args.get("q", "").strip()
+    suppliers = list_suppliers_full(q)
+
+    return render_template(
+        "suppliers.html",
+        username=session.get("username"),
+        suppliers=suppliers,
+        q=q
+    )
 
 
 @app.route("/proveedores/nuevo", methods=["GET", "POST"])
@@ -2445,6 +2523,50 @@ def invoices_list():
     )
 
 
+@app.route("/facturas/leer_pdf", methods=["POST"])
+def invoice_read_pdf():
+    if not login_required():
+        return jsonify({"ok": False, "message": "Sesión no válida"}), 401
+
+    file = request.files.get("pdf_file")
+
+    if not file or not file.filename:
+        return jsonify({"ok": False, "message": "No se recibió ningún archivo PDF."}), 400
+
+    if not allowed_pdf_file(file.filename):
+        return jsonify({"ok": False, "message": "Solo se permiten archivos PDF."}), 400
+
+    temp_filename = secure_filename(file.filename)
+    temp_filename = f"temp_{temp_filename}"
+    temp_path = os.path.join(app.config["INVOICE_UPLOAD_FOLDER"], temp_filename)
+
+    try:
+        file.save(temp_path)
+        raw_text = extract_text_from_pdf(temp_path)
+        auto_data = auto_extract_invoice_data(raw_text)
+
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+        return jsonify({
+            "ok": True,
+            "data": auto_data,
+            "raw_text": raw_text[:5000]
+        })
+
+    except Exception as e:
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+        return jsonify({
+            "ok": False,
+            "message": f"Error leyendo PDF: {e}"
+        }), 500
+
+
 @app.route("/facturas/nueva", methods=["GET", "POST"])
 def invoice_new():
     if not login_required():
@@ -2543,7 +2665,7 @@ def invoice_new():
                 supplier_name=supplier_name,
                 supplier_ruc=supplier_ruc,
                 invoice_type=invoice_type,
-                invoice_series=invoice_series,
+                invoice_series=invoiceSeries if False else invoice_series,
                 invoice_number=invoice_number,
                 full_number=full_number,
                 issue_date=issue_date_db,
@@ -2712,51 +2834,6 @@ def invoice_delete(invoice_id):
         flash(f"Error eliminando factura: {e}", "error")
 
     return redirect(url_for("invoices_list"))
-
-
-@app.route("/facturas/leer_pdf", methods=["POST"])
-def invoice_read_pdf():
-    if not login_required():
-        return jsonify({"ok": False, "message": "Sesión no válida"}), 401
-
-    file = request.files.get("pdf_file")
-
-    if not file or not file.filename:
-        return jsonify({"ok": False, "message": "No se recibió ningún archivo PDF."}), 400
-
-    if not allowed_pdf_file(file.filename):
-        return jsonify({"ok": False, "message": "Solo se permiten archivos PDF."}), 400
-
-    temp_filename = secure_filename(file.filename)
-    temp_filename = f"temp_{temp_filename}"
-    temp_path = os.path.join(app.config["INVOICE_UPLOAD_FOLDER"], temp_filename)
-
-    try:
-        file.save(temp_path)
-
-        raw_text = extract_text_from_pdf(temp_path)
-        auto_data = auto_extract_invoice_data(raw_text)
-
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-
-        return jsonify({
-            "ok": True,
-            "data": auto_data,
-            "raw_text": raw_text[:5000]
-        })
-
-    except Exception as e:
-        if os.path.exists(temp_path):
-            try:
-                os.remove(temp_path)
-            except Exception:
-                pass
-
-        return jsonify({
-            "ok": False,
-            "message": f"Error leyendo PDF: {e}"
-        }), 500
 
 
 if __name__ == "__main__":
