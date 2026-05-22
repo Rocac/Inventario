@@ -23,3 +23,7 @@ static/uploads/
 # OS
 .DS_Store
 Thumbs.db
+
+backup/
+*.backup
+.env
