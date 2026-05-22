@@ -3,8 +3,8 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.venv/
 venv/
+.venv/
 env/
 
 # Flask
@@ -23,3 +23,7 @@ static/uploads/
 # OS
 .DS_Store
 Thumbs.db
+
+# Backups
+backup/
+*.backup
